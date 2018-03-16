@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
-    "summary": "Tests for elm-package-template.",
-    "repository": "https://github.com/billstclair/elm-package-template.git",
+    "summary": "Tests for elm-jsmaze.",
+    "repository": "https://github.com/billstclair/elm-jsmaze.git",
     "license": "MIT",
     "source-directories": [
         ".",

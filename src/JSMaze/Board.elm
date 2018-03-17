@@ -89,8 +89,8 @@ charsEqual ch chs =
 
 
 type alias WallSpecs =
-    { hs : List WallSpec
-    , vs : List WallSpec
+    { nsSpecs : List WallSpec
+    , ewSpecs : List WallSpec
     , rows : Int
     , cols : Int
     }
@@ -101,47 +101,47 @@ separateBoardSpec spec =
     let
         split : BoardSpec -> ( CharListList, CharListList ) -> ( CharListList, CharListList )
         split =
-            \lines ( hs, vs ) ->
+            \lines ( nss, ews ) ->
                 case lines of
                     [] ->
-                        ( List.reverse hs, List.reverse vs )
+                        ( List.reverse nss, List.reverse ews )
 
                     [ _ ] ->
-                        ( List.reverse hs, List.reverse vs )
+                        ( List.reverse nss, List.reverse ews )
 
-                    h :: v :: tail ->
-                        split tail ( oddChars h :: hs, evenChars v :: vs )
+                    ns :: ew :: tail ->
+                        split tail ( oddChars ns :: nss, evenChars ew :: ews )
 
-        ( hs, vs ) =
+        ( nss, ews ) =
             split spec ( [], [] )
 
-        hl =
-            List.map List.length hs
+        nsls =
+            List.map List.length nss
 
-        vl =
-            List.map List.length vs
+        ewls =
+            List.map List.length ews
 
-        maxhl =
-            List.foldl max 0 hl
+        maxnsl =
+            List.foldl max 0 nsls
 
-        minhl =
-            List.foldl min 1000 hl
+        minnsl =
+            List.foldl min 1000 nsls
 
-        maxvl =
-            List.foldl max 0 vl
+        maxewl =
+            List.foldl max 0 ewls
 
-        minvl =
-            List.foldl min 1000 vl
+        minewl =
+            List.foldl min 1000 ewls
     in
-    if minhl == maxhl && minvl == maxvl && minhl == minvl then
+    if minnsl == maxnsl && minewl == maxewl && minnsl == minewl then
         Ok
-            { hs = List.map (charsEqual '-') hs
-            , vs = List.map (charsEqual '|') vs
-            , rows = List.length hs
-            , cols = maxhl
+            { nsSpecs = List.map (charsEqual '-') nss
+            , ewSpecs = List.map (charsEqual '|') ews
+            , rows = List.length nss
+            , cols = maxewl
             }
     else
-        Err ("Length mismatch: " ++ toString hl ++ ", " ++ toString vl)
+        Err ("Length mismatch: " ++ toString nsls ++ ", " ++ toString ewls)
 
 
 makeEmptyCell : Int -> Int -> Int -> Int -> Cell
@@ -153,7 +153,7 @@ makeEmptyCell rows cols rownum colnum =
         , west = colnum == 0
         , east = colnum == (cols - 1)
         }
-    , players = Array.empty
+    , players = []
     }
 
 
@@ -181,6 +181,149 @@ makeEmptyBoard rows cols =
     }
 
 
-stringsToBoard : List String -> Maybe Board
-stringsToBoard strings =
-    Nothing
+type alias WallSetter =
+    Int -> Bool -> Row -> Maybe Row -> ( Row, Maybe Row )
+
+
+setWalls : WallSetter -> List WallSpec -> Board -> Board
+setWalls setter wallSpecs board =
+    let
+        doCols : Int -> WallSpec -> Row -> Maybe Row -> ( Row, Maybe Row )
+        doCols =
+            \colnum specs row rowAbove ->
+                case specs of
+                    [] ->
+                        ( row, rowAbove )
+
+                    spec :: tail ->
+                        let
+                            ( nr, nra ) =
+                                setter colnum spec row rowAbove
+                        in
+                        doCols (colnum + 1) tail nr nra
+
+        doRows : Int -> List WallSpec -> Array Row -> Array Row
+        doRows =
+            \rownum wallspecs rows ->
+                case wallspecs of
+                    [] ->
+                        rows
+
+                    specs :: tail ->
+                        case Array.get rownum rows of
+                            Nothing ->
+                                rows
+
+                            Just row ->
+                                let
+                                    rowAbove =
+                                        Array.get (rownum - 1) rows
+
+                                    ( nr, nra ) =
+                                        doCols 0 specs row rowAbove
+
+                                    nrs =
+                                        Array.set rownum nr rows
+
+                                    newRows =
+                                        case nra of
+                                            Nothing ->
+                                                nrs
+
+                                            Just r ->
+                                                Array.set (rownum - 1) r nrs
+                                in
+                                doRows (rownum + 1) tail newRows
+
+        rows =
+            doRows 0 wallSpecs board.contents
+    in
+    { board | contents = rows }
+
+
+setNss =
+    setWalls setNs
+
+
+setNs : Int -> Bool -> Row -> Maybe Row -> ( Row, Maybe Row )
+setNs colnum isNs row rowAbove =
+    if not isNs then
+        ( row, rowAbove )
+    else
+        ( setDir setN colnum row
+        , case rowAbove of
+            Nothing ->
+                Nothing
+
+            Just rw ->
+                Just <| setDir setS colnum rw
+        )
+
+
+setEws =
+    setWalls setEw
+
+
+setEw : Int -> Bool -> Row -> Maybe Row -> ( Row, Maybe Row )
+setEw colnum isEw row rowAbove =
+    if not isEw then
+        ( row, Nothing )
+    else
+        ( setDir setW colnum row
+            |> setDir setE (colnum - 1)
+        , Nothing
+        )
+
+
+type alias DirSetter =
+    Walls -> Walls
+
+
+setDir : DirSetter -> Int -> Row -> Row
+setDir setter colnum row =
+    case Array.get colnum row of
+        Nothing ->
+            row
+
+        Just cell ->
+            let
+                newcell =
+                    { cell | walls = setter cell.walls }
+            in
+            Array.set colnum newcell row
+
+
+setE walls =
+    { walls | east = True }
+
+
+setW walls =
+    { walls | west = True }
+
+
+setN walls =
+    { walls | north = True }
+
+
+setS walls =
+    { walls | south = True }
+
+
+stringsToBoard : BoardSpec -> Result String Board
+stringsToBoard spec =
+    case separateBoardSpec spec of
+        Err msg ->
+            Err msg
+
+        Ok wallSpecs ->
+            let
+                rows =
+                    wallSpecs.rows
+
+                cols =
+                    wallSpecs.cols
+            in
+            makeEmptyBoard rows cols
+                |> setNss wallSpecs.nsSpecs
+                |> setEws wallSpecs.ewSpecs
+                |> Ok

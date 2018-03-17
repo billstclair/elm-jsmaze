@@ -62,7 +62,7 @@ type alias Player =
 type alias Cell =
     { location : Location
     , walls : Walls
-    , players : Array (List Player)
+    , players : List Player
     }
 
 

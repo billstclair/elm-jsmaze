@@ -12,10 +12,13 @@
 
 module JSMaze.Board
     exposing
-        ( makeEmptyBoard
+        ( boardToStrings
+        , makeEmptyBoard
         , separateBoardSpec
+        , simpleBoard
         , simpleBoardSpec
         , stringsToBoard
+        , stringsToBoardResult
         )
 
 import Array exposing (Array)
@@ -46,6 +49,11 @@ simpleBoardSpec =
     , "|               |"
     , " --------------- " -- Last row is extraneous
     ]
+
+
+simpleBoard : Board
+simpleBoard =
+    stringsToBoard simpleBoardSpec
 
 
 type alias CharList =
@@ -309,8 +317,18 @@ setS walls =
     { walls | south = True }
 
 
-stringsToBoard : BoardSpec -> Result String Board
+stringsToBoard : BoardSpec -> Board
 stringsToBoard spec =
+    case stringsToBoardResult spec of
+        Ok board ->
+            board
+
+        Err _ ->
+            makeEmptyBoard 1 1
+
+
+stringsToBoardResult : BoardSpec -> Result String Board
+stringsToBoardResult spec =
     case separateBoardSpec spec of
         Err msg ->
             Err msg
@@ -327,3 +345,55 @@ stringsToBoard spec =
                 |> setNss wallSpecs.nsSpecs
                 |> setEws wallSpecs.ewSpecs
                 |> Ok
+
+
+boardToStrings : Board -> BoardSpec
+boardToStrings board =
+    let
+        prefix =
+            Array.toList board.contents
+                |> List.concatMap rowToStrings
+
+        last =
+            String.repeat board.cols " -" ++ " "
+    in
+    List.append prefix [ last ]
+
+
+rowToStrings : Row -> List String
+rowToStrings row =
+    [ rowToNorths row ++ " "
+    , rowToWests row ++ "|"
+    ]
+
+
+rowToNorths : Row -> String
+rowToNorths row =
+    let
+        north : Cell -> String
+        north =
+            \cell ->
+                if cell.walls.north then
+                    " -"
+                else
+                    "  "
+    in
+    Array.toList row
+        |> List.map north
+        |> String.concat
+
+
+rowToWests : Row -> String
+rowToWests row =
+    let
+        west : Cell -> String
+        west =
+            \cell ->
+                if cell.walls.west then
+                    "| "
+                else
+                    "  "
+    in
+    Array.toList row
+        |> List.map west
+        |> String.concat

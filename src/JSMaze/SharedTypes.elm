@@ -54,7 +54,9 @@ type alias Walls =
 
 
 type alias Player =
-    { location : Location
+    { id : Int
+    , name : String
+    , location : Location
     , direction : Direction
     }
 

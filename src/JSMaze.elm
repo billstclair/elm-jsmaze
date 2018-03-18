@@ -57,7 +57,10 @@ import Html.Attributes
         , width
         )
 import Html.Events exposing (onClick, onInput)
-import JSMaze.SharedTypes exposing (Msg(..))
+import JSMaze.Board exposing (simpleBoard)
+import JSMaze.Render exposing (render2d)
+import JSMaze.SharedTypes exposing (Board, Msg(..))
+import JSMaze.Styles as Styles
 import Keyboard exposing (KeyCode)
 import List.Extra as LE
 import Task
@@ -81,6 +84,7 @@ main =
 
 type alias Model =
     { windowSize : Size
+    , board : Board
     }
 
 
@@ -94,6 +98,7 @@ initialSize =
 initialModel : Model
 initialModel =
     { windowSize = initialSize
+    , board = simpleBoard
     }
 
 
@@ -129,8 +134,15 @@ lines strings =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ text "Hello, World!"
+    let
+        w =
+            0.5 * toFloat model.windowSize.width
+    in
+    div [ align "center" ]
+        [ Styles.style
+        , h2 []
+            [ text "JSMaze" ]
+        , render2d w model.board
         ]
 
 

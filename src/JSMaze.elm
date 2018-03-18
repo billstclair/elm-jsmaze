@@ -59,7 +59,7 @@ import Html.Attributes
         )
 import Html.Events exposing (onClick, onInput)
 import JSMaze.Board exposing (addPlayer, canMove, simpleBoard, updatePlayer)
-import JSMaze.Render exposing (render2d)
+import JSMaze.Render exposing (render2d, render3d)
 import JSMaze.SharedTypes exposing (Board, Direction(..), Msg(..), Player)
 import JSMaze.Styles as Styles
 import Keyboard exposing (KeyCode)
@@ -310,13 +310,15 @@ view : Model -> Html Msg
 view model =
     let
         w =
-            0.5 * toFloat model.windowSize.width
+            0.6 * toFloat model.windowSize.width
     in
     div [ align "center" ]
         [ Styles.style
         , h2 []
             [ text "JSMaze" ]
-        , render2d w (Just model.player) model.board
+        , render3d w model.player model.board
+        , br
+        , render2d (w / 4) (Just model.player) model.board
         , p []
             [ text "Use IJKL or WASD to move/rotate." ]
         , p []

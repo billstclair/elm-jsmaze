@@ -22,6 +22,7 @@ module JSMaze.SharedTypes
         , Row
         , WallSpec
         , Walls
+        , sumLocations
         )
 
 import Array exposing (Array)
@@ -44,6 +45,11 @@ type Direction
 
 type alias Location =
     ( Int, Int )
+
+
+sumLocations : Location -> Location -> Location
+sumLocations ( r1, c1 ) ( r2, c2 ) =
+    ( r1 + r2, c1 + c2 )
 
 
 type alias Walls =

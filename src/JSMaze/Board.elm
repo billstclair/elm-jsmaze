@@ -15,6 +15,7 @@ module JSMaze.Board
         ( addPlayer
         , boardToStrings
         , canMove
+        , forwardDelta
         , getCell
         , makeEmptyBoard
         , removePlayer
@@ -39,7 +40,22 @@ import JSMaze.SharedTypes
         , Row
         , WallSpec
         , Walls
+        , sumLocations
         )
+
+
+oldSimpleBoardSpec : BoardSpec
+oldSimpleBoardSpec =
+    [ " --------------- "
+    , "| |             |"
+    , "     ---------   "
+    , "|   |           |"
+    , "   -   --------- "
+    , "| |             |"
+    , "   -----------   "
+    , "|               |"
+    , " --------------- " -- Last row is extraneous
+    ]
 
 
 simpleBoardSpec : BoardSpec
@@ -51,8 +67,14 @@ simpleBoardSpec =
     , "   -   --------- "
     , "| |             |"
     , "   -----------   "
+    , "| |             |"
+    , "     ----------- "
+    , "| | |           |"
+    , "     ---------   "
+    , "| |           | |"
+    , "   -------  --   "
     , "|               |"
-    , " --------------- " -- Last row is extraneous
+    , " --------------- "
     ]
 
 
@@ -508,3 +530,23 @@ canMove location ( dr, dc ) board =
                             not walls.west
                 in
                 drok && dcok
+
+
+type alias WallGetter =
+    Walls -> Bool
+
+
+forwardDelta : Direction -> ( Location, Direction, Direction, WallGetter, WallGetter, WallGetter )
+forwardDelta dir =
+    case dir of
+        North ->
+            ( ( -1, 0 ), West, East, .west, .east, .north )
+
+        South ->
+            ( ( 1, 0 ), East, West, .east, .west, .south )
+
+        East ->
+            ( ( 0, 1 ), North, South, .north, .south, .east )
+
+        West ->
+            ( ( 0, -1 ), South, North, .south, .north, .west )

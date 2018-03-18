@@ -31,6 +31,7 @@ import Window exposing (Size)
 type Msg
     = InitialSize Size
     | Resize Size
+    | DownKey Int
     | Nop
 
 

@@ -14,6 +14,8 @@ module JSMaze.Board
     exposing
         ( addPlayer
         , boardToStrings
+        , canMove
+        , getCell
         , makeEmptyBoard
         , removePlayer
         , separateBoardSpec
@@ -21,6 +23,7 @@ module JSMaze.Board
         , simpleBoardSpec
         , stringsToBoard
         , stringsToBoardResult
+        , updatePlayer
         )
 
 import Array exposing (Array)
@@ -436,14 +439,9 @@ modifyPlayers modifier player board =
                     { board | contents = newContents }
 
 
-playerIdEq : Int -> Player -> Bool
-playerIdEq id player =
-    id == player.id
-
-
 removeFromPlayers : Player -> List Player -> List Player
 removeFromPlayers player players =
-    List.filter (playerIdEq player.id) players
+    List.filter ((\id p -> id == p.id) player.id) players
 
 
 removePlayer : Player -> Board -> Board
@@ -454,3 +452,59 @@ removePlayer player board =
 addPlayer : Player -> Board -> Board
 addPlayer player board =
     modifyPlayers (::) player board
+
+
+updatePlayer : Player -> Player -> Board -> Board
+updatePlayer player newPlayer board =
+    removePlayer player board
+        |> addPlayer newPlayer
+
+
+getCell : Location -> Board -> Maybe Cell
+getCell ( r, c ) board =
+    case Array.get r board.contents of
+        Nothing ->
+            Nothing
+
+        Just row ->
+            Array.get c row
+
+
+canMove : Location -> Location -> Board -> Bool
+canMove location ( dr, dc ) board =
+    let
+        ( r, c ) =
+            location
+
+        ( nr, nc ) =
+            ( r + dr, c + dc )
+    in
+    if nr < 0 || nr >= board.rows || nc < 0 || nc >= board.cols then
+        False
+    else
+        case getCell location board of
+            Nothing ->
+                False
+
+            Just cell ->
+                let
+                    walls =
+                        cell.walls
+
+                    drok =
+                        if dr == 0 then
+                            True
+                        else if dr > 0 then
+                            not walls.south
+                        else
+                            not walls.north
+
+                    dcok =
+                        if dc == 0 then
+                            True
+                        else if dc > 0 then
+                            not walls.east
+                        else
+                            not walls.west
+                in
+                drok && dcok

@@ -33,6 +33,7 @@ import JSMaze.SharedTypes
         )
 import JSMaze.Styles exposing (SClass(..))
 import JSMaze.TwoDMath exposing (Rectangle, Vector)
+import Keyboard exposing (KeyCode)
 import Svg exposing (Svg, g, image, line, rect, svg)
 import Svg.Attributes
     exposing
@@ -169,13 +170,13 @@ render2dPlayer : Float -> Player -> Svg Msg
 render2dPlayer delta player =
     let
         q =
-            0.25 * delta
+            0.2 * delta
 
         h =
             0.5 * delta
 
         t =
-            0.33 * delta
+            0.25 * delta
 
         ( r, c ) =
             player.location
@@ -208,9 +209,18 @@ render2dPlayer delta player =
             , toString <| x + x3f
             , toString <| y + y3f
             )
+
+        p1 =
+            x1s ++ "," ++ y1s
+
+        p2 =
+            x2s ++ "," ++ y2s
+
+        p3 =
+            x3s ++ "," ++ y3s
     in
     Svg.polygon
         [ class "Svg2dPlayer"
-        , points <| x1s ++ "," ++ y1s ++ " " ++ x2s ++ "," ++ y2s ++ " " ++ x3s ++ "," ++ y3s
+        , points <| p1 ++ " " ++ p2 ++ " " ++ p3
         ]
         []

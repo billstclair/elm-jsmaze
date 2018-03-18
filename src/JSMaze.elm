@@ -12,6 +12,7 @@
 
 module JSMaze exposing (..)
 
+import Char
 import Debug exposing (log)
 import Html
     exposing
@@ -57,7 +58,7 @@ import Html.Attributes
         , width
         )
 import Html.Events exposing (onClick, onInput)
-import JSMaze.Board exposing (addPlayer, removePlayer, simpleBoard)
+import JSMaze.Board exposing (addPlayer, canMove, simpleBoard, updatePlayer)
 import JSMaze.Render exposing (render2d)
 import JSMaze.SharedTypes exposing (Board, Direction(..), Msg(..), Player)
 import JSMaze.Styles as Styles
@@ -129,8 +130,186 @@ update msg model =
         Resize size ->
             { model | windowSize = size } ! []
 
+        DownKey code ->
+            processDownKey code model ! []
+
         Nop ->
             model ! []
+
+
+dirDelta : Direction -> ( Int, Int )
+dirDelta dir =
+    case dir of
+        North ->
+            ( -1, 0 )
+
+        South ->
+            ( 1, 0 )
+
+        East ->
+            ( 0, 1 )
+
+        West ->
+            ( 0, -1 )
+
+
+moveDelta : Direction -> Direction -> ( Int, Int )
+moveDelta dir playerDir =
+    if dir == North then
+        case playerDir of
+            North ->
+                ( -1, 0 )
+
+            South ->
+                ( 1, 0 )
+
+            East ->
+                ( 0, 1 )
+
+            West ->
+                ( 0, -1 )
+    else
+        case playerDir of
+            North ->
+                ( 1, 0 )
+
+            South ->
+                ( -1, 0 )
+
+            East ->
+                ( 0, -1 )
+
+            West ->
+                ( 0, 1 )
+
+
+moveDir : Direction -> Direction -> Direction
+moveDir dir playerDir =
+    if dir == East then
+        case playerDir of
+            North ->
+                East
+
+            East ->
+                South
+
+            South ->
+                West
+
+            West ->
+                North
+    else
+        case playerDir of
+            North ->
+                West
+
+            West ->
+                South
+
+            South ->
+                East
+
+            East ->
+                North
+
+
+movePlayer : Direction -> Model -> Model
+movePlayer dir model =
+    let
+        player =
+            model.player
+
+        playerDir =
+            player.direction
+
+        loc =
+            player.location
+
+        ( r, c ) =
+            loc
+
+        board =
+            model.board
+
+        ( rows, cols ) =
+            ( board.rows, board.cols )
+
+        ( newloc, newdir ) =
+            if dir == North || dir == South then
+                let
+                    ( dr, dc ) =
+                        moveDelta dir playerDir
+                in
+                if canMove loc ( dr, dc ) board then
+                    ( ( r + dr, c + dc ), playerDir )
+                else
+                    ( loc, playerDir )
+            else
+                ( loc, moveDir dir playerDir )
+    in
+    if newloc == loc && newdir == playerDir then
+        model
+    else
+        let
+            newPlayer =
+                { player
+                    | location = newloc
+                    , direction = newdir
+                }
+
+            newBoard =
+                updatePlayer player newPlayer board
+        in
+        { model
+            | board = newBoard
+            , player = newPlayer
+        }
+
+
+upChars : List Char
+upChars =
+    [ 'i', 'I', 'w', 'W' ]
+
+
+downChars : List Char
+downChars =
+    [ 'k', 'K', 's', 'S' ]
+
+
+rightChars : List Char
+rightChars =
+    [ 'l', 'L', 'd', 'D' ]
+
+
+leftChars : List Char
+leftChars =
+    [ 'j', 'J', 'a', 'A' ]
+
+
+processDownKey : Int -> Model -> Model
+processDownKey code model =
+    let
+        char =
+            Char.fromCode code
+
+        dir =
+            if List.member char upChars then
+                Just North
+            else if List.member char downChars then
+                Just South
+            else if List.member char rightChars then
+                Just East
+            else if List.member char leftChars then
+                Just West
+            else
+                Nothing
+    in
+    case dir of
+        Nothing ->
+            model
+
+        Just d ->
+            movePlayer d model
 
 
 br : Html msg
@@ -161,4 +340,5 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Window.resizes Resize
+        , Keyboard.downs DownKey
         ]

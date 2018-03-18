@@ -309,8 +309,11 @@ lines strings =
 view : Model -> Html Msg
 view model =
     let
+        ws =
+            model.windowSize
+
         w =
-            0.6 * toFloat model.windowSize.width
+            0.6 * toFloat (min ws.width ws.height)
     in
     div [ align "center" ]
         [ Styles.style

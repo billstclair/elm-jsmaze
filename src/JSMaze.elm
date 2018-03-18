@@ -318,7 +318,7 @@ view model =
             [ text "JSMaze" ]
         , render2d w (Just model.player) model.board
         , p []
-            [ text "Use IJKL or WASD to move/rotate" ]
+            [ text "Use IJKL or WASD to move/rotate." ]
         , p []
             [ text "3D rendering coming soon. " ]
         , p []

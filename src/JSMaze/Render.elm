@@ -12,7 +12,9 @@
 
 module JSMaze.Render
     exposing
-        ( render2d
+        ( getDeltaN
+        , render2d
+        , render3d
         )
 
 import Array exposing (Array)
@@ -224,3 +226,78 @@ render2dPlayer delta player =
         , points <| p1 ++ " " ++ p2 ++ " " ++ p3
         ]
         []
+
+
+vanishingDistance : Int
+vanishingDistance =
+    10
+
+
+vanishingSize : Float
+vanishingSize =
+    0.2
+
+
+wallLength : Float
+wallLength =
+    sqrt (2 * (((1 - vanishingSize) / 2) ^ 2))
+
+
+wallConstant : Float
+wallConstant =
+    0.8
+
+
+sumXn : Float -> Int -> Float
+sumXn x n =
+    if n == 0 then
+        0
+    else
+        let
+            loop =
+                \i xn res ->
+                    if i <= 0 then
+                        res
+                    else
+                        loop (i - 1) (xn * x) (res + xn)
+        in
+        loop n x 0
+
+
+xnConstant : Float
+xnConstant =
+    wallLength
+        / sumXn wallConstant vanishingDistance
+
+
+deltaN : Float -> Int -> Float
+deltaN size n =
+    let
+        diag =
+            xnConstant
+                * sumXn wallConstant n
+    in
+    size * sqrt (diag ^ 2 / 2)
+
+
+deltaNs : Array Float
+deltaNs =
+    List.map
+        (deltaN 1)
+        (List.range 1 vanishingDistance)
+        |> Array.fromList
+
+
+getDeltaN : Float -> Int -> Float
+getDeltaN size n =
+    case Array.get n deltaNs of
+        Just dn ->
+            size * dn
+
+        Nothing ->
+            deltaN size n
+
+
+render3d : Float -> Maybe Player -> Board -> Html Msg
+render3d w player board =
+    Html.text ""

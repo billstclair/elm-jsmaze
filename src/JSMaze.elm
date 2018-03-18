@@ -137,22 +137,6 @@ update msg model =
             model ! []
 
 
-dirDelta : Direction -> ( Int, Int )
-dirDelta dir =
-    case dir of
-        North ->
-            ( -1, 0 )
-
-        South ->
-            ( 1, 0 )
-
-        East ->
-            ( 0, 1 )
-
-        West ->
-            ( 0, -1 )
-
-
 moveDelta : Direction -> Direction -> ( Int, Int )
 moveDelta dir playerDir =
     if dir == North then
@@ -333,6 +317,17 @@ view model =
         , h2 []
             [ text "JSMaze" ]
         , render2d w (Just model.player) model.board
+        , p []
+            [ text "Use IJKL or WASD to move/rotate" ]
+        , p []
+            [ text "3D rendering coming soon. " ]
+        , p []
+            [ a
+                [ href "https://github.com/billstclair/elm-jsmaze"
+                , target "_blank"
+                ]
+                [ text "GitHub" ]
+            ]
         ]
 
 

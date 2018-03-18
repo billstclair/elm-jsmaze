@@ -57,9 +57,9 @@ import Html.Attributes
         , width
         )
 import Html.Events exposing (onClick, onInput)
-import JSMaze.Board exposing (simpleBoard)
+import JSMaze.Board exposing (addPlayer, removePlayer, simpleBoard)
 import JSMaze.Render exposing (render2d)
-import JSMaze.SharedTypes exposing (Board, Msg(..))
+import JSMaze.SharedTypes exposing (Board, Direction(..), Msg(..), Player)
 import JSMaze.Styles as Styles
 import Keyboard exposing (KeyCode)
 import List.Extra as LE
@@ -85,6 +85,7 @@ main =
 type alias Model =
     { windowSize : Size
     , board : Board
+    , player : Player
     }
 
 
@@ -95,10 +96,20 @@ initialSize =
     }
 
 
+initialPlayer : Player
+initialPlayer =
+    { id = 0
+    , name = "Joe Bob"
+    , location = ( 0, 0 )
+    , direction = South
+    }
+
+
 initialModel : Model
 initialModel =
     { windowSize = initialSize
-    , board = simpleBoard
+    , board = addPlayer initialPlayer simpleBoard
+    , player = initialPlayer
     }
 
 
@@ -142,7 +153,7 @@ view model =
         [ Styles.style
         , h2 []
             [ text "JSMaze" ]
-        , render2d w model.board
+        , render2d w (Just model.player) model.board
         ]
 
 

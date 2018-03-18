@@ -12,8 +12,10 @@
 
 module JSMaze.Board
     exposing
-        ( boardToStrings
+        ( addPlayer
+        , boardToStrings
         , makeEmptyBoard
+        , removePlayer
         , separateBoardSpec
         , simpleBoard
         , simpleBoardSpec
@@ -397,3 +399,58 @@ rowToWests row =
     Array.toList row
         |> List.map west
         |> String.concat
+
+
+modifyPlayers : (Player -> List Player -> List Player) -> Player -> Board -> Board
+modifyPlayers modifier player board =
+    let
+        ( rownum, colnum ) =
+            player.location
+
+        id =
+            player.id
+    in
+    case Array.get rownum board.contents of
+        Nothing ->
+            board
+
+        Just row ->
+            case Array.get colnum row of
+                Nothing ->
+                    board
+
+                Just cell ->
+                    let
+                        newCell =
+                            { cell
+                                | players =
+                                    modifier player cell.players
+                            }
+
+                        newRow =
+                            Array.set colnum newCell row
+
+                        newContents =
+                            Array.set rownum newRow board.contents
+                    in
+                    { board | contents = newContents }
+
+
+playerIdEq : Int -> Player -> Bool
+playerIdEq id player =
+    id == player.id
+
+
+removeFromPlayers : Player -> List Player -> List Player
+removeFromPlayers player players =
+    List.filter (playerIdEq player.id) players
+
+
+removePlayer : Player -> Board -> Board
+removePlayer player board =
+    modifyPlayers removeFromPlayers player board
+
+
+addPlayer : Player -> Board -> Board
+addPlayer player board =
+    modifyPlayers (::) player board

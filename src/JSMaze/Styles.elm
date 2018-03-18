@@ -20,6 +20,8 @@ type SClass
     = Error
       -- SVG Classes
     | SvgBorder
+    | SvgLine
+    | Svg2dPlayer
     | SvgLabel
     | SvgLabelText
     | SvgCell
@@ -77,6 +79,17 @@ rules =
         , ( "stroke", "black" )
         , ( "fill", "white" )
         , ( "stroke-width", "2px" )
+        ]
+    , rule
+        [ Class SvgLine ]
+        [ ( "stroke", "black" )
+        , ( "stroke-width", "2px" )
+        ]
+    , rule
+        [ Class Svg2dPlayer ]
+        [ ( "stroke", "darkgray" )
+        , ( "stroke-width", "1px" )
+        , ( "fill", "darkgray" )
         ]
     , rule
         [ Class SvgCellColor ]

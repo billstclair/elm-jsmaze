@@ -18,21 +18,32 @@ module JSMaze.SharedTypes
         , Direction(..)
         , Location
         , Msg(..)
+        , Operation(..)
         , Player
         , Row
         , WallSpec
         , Walls
+        , operationToDirection
         , sumLocations
         )
 
 import Array exposing (Array)
+import Svg.Button as Button
 import Window exposing (Size)
+
+
+type Operation
+    = TurnRight
+    | TurnLeft
+    | GoForward
+    | GoBack
 
 
 type Msg
     = InitialSize Size
     | Resize Size
     | DownKey Int
+    | ButtonMsg (Button.Msg Msg Operation)
     | Nop
 
 
@@ -41,6 +52,22 @@ type Direction
     | South
     | East
     | West
+
+
+operationToDirection : Operation -> Direction
+operationToDirection operation =
+    case operation of
+        GoForward ->
+            North
+
+        GoBack ->
+            South
+
+        TurnLeft ->
+            West
+
+        TurnRight ->
+            East
 
 
 type alias Location =

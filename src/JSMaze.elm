@@ -59,11 +59,19 @@ import Html.Attributes
         )
 import Html.Events exposing (onClick, onInput)
 import JSMaze.Board exposing (addPlayer, canMove, simpleBoard, updatePlayer)
-import JSMaze.Render exposing (render2d, render3d)
-import JSMaze.SharedTypes exposing (Board, Direction(..), Msg(..), Player)
+import JSMaze.Render exposing (render2d, render3d, renderControls)
+import JSMaze.SharedTypes
+    exposing
+        ( Board
+        , Direction(..)
+        , Msg(..)
+        , Player
+        , operationToDirection
+        )
 import JSMaze.Styles as Styles
 import Keyboard exposing (KeyCode)
 import List.Extra as LE
+import Svg.Button as Button
 import Task
 import Time exposing (Time)
 import Window exposing (Size)
@@ -123,6 +131,22 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ButtonMsg msg ->
+            let
+                ( isClick, button, _ ) =
+                    Button.update msg
+
+                dir =
+                    operationToDirection <| Button.getState button
+
+                mdl =
+                    if isClick then
+                        movePlayer dir model
+                    else
+                        model
+            in
+            mdl ! []
+
         InitialSize size ->
             { model | windowSize = size }
                 ! []
@@ -321,11 +345,13 @@ view model =
             [ text "JSMaze" ]
         , render3d w model.player model.board
         , br
-        , render2d (w / 4) (Just model.player) model.board
+        , render2d (w / 3) (Just model.player) model.board
+        , text " "
+        , renderControls (w / 3)
         , p []
             [ text "Use IJKL or WASD to move/rotate." ]
         , p []
-            [ text "3D rendering coming soon. " ]
+            [ text "Mobile controls coming soon. " ]
         , p []
             [ a
                 [ href "https://github.com/billstclair/elm-jsmaze"

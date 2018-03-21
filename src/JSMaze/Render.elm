@@ -15,6 +15,7 @@ module JSMaze.Render
         ( getDeltaN
         , render2d
         , render3d
+        , renderControls
         )
 
 import Array exposing (Array)
@@ -29,6 +30,7 @@ import JSMaze.SharedTypes
         , Direction(..)
         , Location
         , Msg(..)
+        , Operation(..)
         , Player
         , Row
         , WallSpec
@@ -56,6 +58,15 @@ import Svg.Attributes
         , y
         , y1
         , y2
+        )
+import Svg.Button as Button
+    exposing
+        ( Content(..)
+        , checkSubscription
+        , getState
+        , normalRepeatTime
+        , repeatingButton
+        , simpleButton
         )
 
 
@@ -546,4 +557,50 @@ render3d w player board =
             []
         , g [ class "SvgLine" ]
             cells
+        ]
+
+
+renderControls : Float -> Html Msg
+renderControls w =
+    let
+        ws =
+            toString w
+
+        bw =
+            w / 2
+
+        bw3s =
+            toString (bw * 3)
+
+        bwo2 =
+            bw / 2
+
+        size : Button.Size
+        size =
+            ( bw, bw )
+    in
+    svg
+        [ width bw3s
+        , height ws
+        ]
+        [ Button.render
+            ( 2, bwo2 )
+            (TextContent "<")
+            ButtonMsg
+            (simpleButton size TurnLeft)
+        , Button.render
+            ( bw, 2 )
+            (TextContent "^")
+            ButtonMsg
+            (simpleButton size GoForward)
+        , Button.render
+            ( bw, bw )
+            (TextContent "v")
+            ButtonMsg
+            (simpleButton size GoBack)
+        , Button.render
+            ( 2 * bw - 2, bwo2 - 2 )
+            (TextContent ">")
+            ButtonMsg
+            (simpleButton size TurnRight)
         ]

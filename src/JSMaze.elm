@@ -406,7 +406,7 @@ view model =
         , p []
             [ text "Use IJKL or WASD to move/rotate." ]
         , p []
-            [ text "Mobile controls coming soon. " ]
+            [ text "Maze editor coming soon. " ]
         , p []
             [ a
                 [ href "https://github.com/billstclair/elm-jsmaze"

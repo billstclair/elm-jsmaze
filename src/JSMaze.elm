@@ -95,6 +95,7 @@ type alias Model =
     { windowSize : Size
     , board : Board
     , player : Player
+    , isTouchAware : Bool
     }
 
 
@@ -119,6 +120,7 @@ initialModel =
     { windowSize = initialSize
     , board = addPlayer initialPlayer simpleBoard
     , player = initialPlayer
+    , isTouchAware = False
     }
 
 
@@ -145,7 +147,14 @@ update msg model =
                     else
                         model
             in
-            mdl ! []
+            { mdl
+                | isTouchAware =
+                    if Button.isTouchAware button then
+                        True
+                    else
+                        mdl.isTouchAware
+            }
+                ! []
 
         InitialSize size ->
             { model | windowSize = size }
@@ -347,7 +356,7 @@ view model =
         , br
         , render2d (w / 3) (Just model.player) model.board
         , text " "
-        , renderControls (w / 3)
+        , renderControls (w / 3) model.isTouchAware
         , p []
             [ text "Use IJKL or WASD to move/rotate." ]
         , p []

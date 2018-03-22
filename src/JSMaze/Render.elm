@@ -61,12 +61,12 @@ import Svg.Attributes
         )
 import Svg.Button as Button
     exposing
-        ( Content(..)
+        ( Button
+        , Content(..)
         , checkSubscription
         , getState
         , normalRepeatTime
         , repeatingButton
-        , simpleButton
         )
 
 
@@ -560,8 +560,17 @@ render3d w player board =
         ]
 
 
-renderControls : Float -> Html Msg
-renderControls w =
+simpleButton : Button.Size -> Operation -> Bool -> Button Operation
+simpleButton size operation isTouchAware =
+    let
+        button =
+            Button.simpleButton size operation
+    in
+    Button.setTouchAware isTouchAware button
+
+
+renderControls : Float -> Bool -> Html Msg
+renderControls w isTouchAware =
     let
         ws =
             toString w
@@ -587,20 +596,20 @@ renderControls w =
             ( 2, bwo2 )
             (TextContent "<")
             ButtonMsg
-            (simpleButton size TurnLeft)
+            (simpleButton size TurnLeft isTouchAware)
         , Button.render
             ( bw, 2 )
             (TextContent "^")
             ButtonMsg
-            (simpleButton size GoForward)
+            (simpleButton size GoForward isTouchAware)
         , Button.render
             ( bw, bw )
             (TextContent "v")
             ButtonMsg
-            (simpleButton size GoBack)
+            (simpleButton size GoBack isTouchAware)
         , Button.render
             ( 2 * bw - 2, bwo2 - 2 )
             (TextContent ">")
             ButtonMsg
-            (simpleButton size TurnRight)
+            (simpleButton size TurnRight isTouchAware)
         ]

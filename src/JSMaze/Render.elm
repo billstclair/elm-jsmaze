@@ -67,6 +67,7 @@ import Svg.Button as Button
         , getState
         , normalRepeatTime
         , repeatingButton
+        , setSize
         )
 
 
@@ -569,8 +570,13 @@ simpleButton size operation isTouchAware =
     Button.setTouchAware isTouchAware button
 
 
-renderControls : Float -> Bool -> Html Msg
-renderControls w isTouchAware =
+repeatingButton : Button.Size -> Operation -> Button Operation
+repeatingButton size operation =
+    Button.repeatingButton normalRepeatTime size operation
+
+
+renderControls : Float -> Bool -> Button Operation -> Button Operation -> Html Msg
+renderControls w isTouchAware forwardButton reverseButton =
     let
         ws =
             toString w
@@ -601,12 +607,12 @@ renderControls w isTouchAware =
             ( bw, 2 )
             (TextContent "^")
             ButtonMsg
-            (simpleButton size GoForward isTouchAware)
+            (setSize size forwardButton)
         , Button.render
             ( bw, bw )
             (TextContent "v")
             ButtonMsg
-            (simpleButton size GoBack isTouchAware)
+            (setSize size reverseButton)
         , Button.render
             ( 2 * bw - 2, bwo2 - 2 )
             (TextContent ">")

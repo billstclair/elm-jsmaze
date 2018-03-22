@@ -65,13 +65,14 @@ import JSMaze.SharedTypes
         ( Board
         , Direction(..)
         , Msg(..)
+        , Operation(..)
         , Player
         , operationToDirection
         )
 import JSMaze.Styles as Styles
 import Keyboard exposing (KeyCode)
 import List.Extra as LE
-import Svg.Button as Button
+import Svg.Button as Button exposing (Button, normalRepeatTime)
 import Task
 import Time exposing (Time)
 import Window exposing (Size)
@@ -96,6 +97,9 @@ type alias Model =
     , board : Board
     , player : Player
     , isTouchAware : Bool
+    , forwardButton : Button Operation
+    , backButton : Button Operation
+    , subscription : Maybe ( Time, Button.Msg Msg Operation )
     }
 
 
@@ -115,12 +119,25 @@ initialPlayer =
     }
 
 
+initialButtonSize : Button.Size
+initialButtonSize =
+    ( 100, 100 )
+
+
+initialRepeatingButton : Operation -> Button Operation
+initialRepeatingButton operation =
+    Button.repeatingButton normalRepeatTime initialButtonSize operation
+
+
 initialModel : Model
 initialModel =
     { windowSize = initialSize
     , board = addPlayer initialPlayer simpleBoard
     , player = initialPlayer
     , isTouchAware = False
+    , forwardButton = initialRepeatingButton GoForward
+    , backButton = initialRepeatingButton GoBack
+    , subscription = Nothing
     }
 
 
@@ -130,31 +147,57 @@ init =
         ! [ initialSizeCmd ]
 
 
+updateButton : Button Operation -> Model -> Model
+updateButton button model =
+    case Button.getState button of
+        GoForward ->
+            { model | forwardButton = button }
+
+        GoBack ->
+            { model | backButton = button }
+
+        _ ->
+            model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ButtonMsg msg ->
-            let
-                ( isClick, button, _ ) =
-                    Button.update msg
+            case Button.checkSubscription msg of
+                Just ( time, msg ) ->
+                    { model
+                        | subscription =
+                            if time <= 0 then
+                                Nothing
+                            else
+                                Just ( time, msg )
+                    }
+                        ! []
 
-                dir =
-                    operationToDirection <| Button.getState button
+                Nothing ->
+                    let
+                        ( isClick, button, cmd ) =
+                            Button.update msg
 
-                mdl =
-                    if isClick then
-                        movePlayer dir model
-                    else
-                        model
-            in
-            { mdl
-                | isTouchAware =
-                    if Button.isTouchAware button then
-                        True
-                    else
-                        mdl.isTouchAware
-            }
-                ! []
+                        dir =
+                            operationToDirection <| Button.getState button
+
+                        mdl =
+                            if isClick then
+                                movePlayer dir model
+                            else
+                                model
+                    in
+                    updateButton button
+                        { mdl
+                            | isTouchAware =
+                                if Button.isTouchAware button then
+                                    True
+                                else
+                                    mdl.isTouchAware
+                        }
+                        ! [ cmd ]
 
         InitialSize size ->
             { model | windowSize = size }
@@ -356,7 +399,10 @@ view model =
         , br
         , render2d (w / 3) (Just model.player) model.board
         , text " "
-        , renderControls (w / 3) model.isTouchAware
+        , renderControls (w / 3)
+            model.isTouchAware
+            model.forwardButton
+            model.backButton
         , p []
             [ text "Use IJKL or WASD to move/rotate." ]
         , p []
@@ -376,4 +422,10 @@ subscriptions model =
     Sub.batch
         [ Window.resizes Resize
         , Keyboard.downs DownKey
+        , case model.subscription of
+            Nothing ->
+                Sub.none
+
+            Just ( time, msg ) ->
+                Time.every time (\_ -> ButtonMsg msg)
         ]

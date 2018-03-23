@@ -442,13 +442,7 @@ view model =
         , p []
             [ text "Maze editor coming soon. " ]
         , p []
-            [ text (copyright ++ " 2018 ")
-            , a [ href "https://GibGoyGames.com/" ]
-                [ text "Gib Goy Games" ]
-            , space
-            , mailLink "GibGoyGames@gmail.com"
-            , br
-            , logoLink "https://github.com/billstclair/elm-jsmaze"
+            [ logoLink "https://github.com/billstclair/elm-jsmaze"
                 "GitHub-Mark-32px.png"
                 "GitHub source code"
                 32
@@ -457,6 +451,12 @@ view model =
                 "elm-logo-125x125.png"
                 "Elm inside"
                 28
+            , br
+            , text (copyright ++ " 2018 ")
+            , a [ href "https://GibGoyGames.com/" ]
+                [ text "Gib Goy Games" ]
+            , space
+            , mailLink "GibGoyGames@gmail.com"
             ]
         ]
 

@@ -59,6 +59,7 @@ import Html.Attributes
         )
 import Html.Events exposing (onClick, onInput)
 import JSMaze.Board exposing (addPlayer, canMove, simpleBoard, updatePlayer)
+import JSMaze.Entities exposing (copyright, nbsp)
 import JSMaze.Render exposing (render2d, render3d, renderControls)
 import JSMaze.SharedTypes
     exposing
@@ -382,6 +383,39 @@ lines strings =
     p [] (List.concatMap (\s -> [ text s, br ]) strings)
 
 
+sqrimg : String -> String -> Int -> Html Msg
+sqrimg url name size =
+    img
+        [ src url
+        , title name
+        , alt name
+        , width size
+        , height size
+        ]
+        []
+
+
+logoLink : String -> String -> String -> Int -> Html Msg
+logoLink url img name size =
+    a [ href url ]
+        [ sqrimg ("images/" ++ img) name size ]
+
+
+mailLink : String -> Html Msg
+mailLink email =
+    span []
+        [ text "<"
+        , a [ href ("mailto:" ++ email) ]
+            [ text email ]
+        , text ">"
+        ]
+
+
+space : Html Msg
+space =
+    text " "
+
+
 view : Model -> Html Msg
 view model =
     let
@@ -398,7 +432,7 @@ view model =
         , render3d w model.player model.board
         , br
         , render2d (w / 3) (Just model.player) model.board
-        , text " "
+        , space
         , renderControls (w / 3)
             model.isTouchAware
             model.forwardButton
@@ -408,11 +442,21 @@ view model =
         , p []
             [ text "Maze editor coming soon. " ]
         , p []
-            [ a
-                [ href "https://github.com/billstclair/elm-jsmaze"
-                , target "_blank"
-                ]
-                [ text "GitHub" ]
+            [ text (copyright ++ " 2018 ")
+            , a [ href "https://GibGoyGames.com/" ]
+                [ text "Gib Goy Games" ]
+            , space
+            , mailLink "GibGoyGames@gmail.com"
+            , br
+            , logoLink "https://github.com/billstclair/elm-jsmaze"
+                "GitHub-Mark-32px.png"
+                "GitHub source code"
+                32
+            , space
+            , logoLink "http://elm-lang.org/"
+                "elm-logo-125x125.png"
+                "Elm inside"
+                28
             ]
         ]
 

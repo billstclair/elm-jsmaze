@@ -2,6 +2,6 @@
 
 # Compile the application into site/index.html
 
-elm-make src/JSMaze.elm --output site/index.html
+elm-make src/JSMaze.elm --output site/jsmaze.js
 cd site
 rsyncit

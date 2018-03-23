@@ -389,7 +389,7 @@ view model =
             model.windowSize
 
         w =
-            0.6 * toFloat (min ws.width ws.height)
+            0.9 * toFloat (min ws.width (ws.height * 2 // 3))
     in
     div [ align "center" ]
         [ Styles.style

@@ -244,7 +244,7 @@ render2dPlayer delta player =
 
 vanishingDistance : Int
 vanishingDistance =
-    10
+    12
 
 
 vanishingSize : Float

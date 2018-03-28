@@ -13,6 +13,7 @@
 module JSMaze.Persistence
     exposing
         ( PersistentThing(..)
+        , decodePersistentThing
         , readAllBoardIds
         , readAllBoardPlayerIds
         , readBoard
@@ -24,24 +25,15 @@ module JSMaze.Persistence
 import JSMaze.EncodeDecode
     exposing
         ( decodeBoard
-        , decodeBoardSpec
         , decodePlayer
         , encodeBoard
-        , encodeBoardSpec
         , encodePlayer
-        , stringToValue
-        , valueToString
         )
 import JSMaze.SharedTypes
     exposing
         ( Board
-        , BoardSpec
-        , Cell
-        , Direction(..)
-        , Location
         , Player
         )
-import Json.Decode as JD exposing (Decoder)
 import Json.Encode as JE exposing (Value)
 import LocalStorage exposing (LocalStorage, getItem, listKeys, setItem)
 

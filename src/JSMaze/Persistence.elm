@@ -16,8 +16,7 @@ module JSMaze.Persistence
         , decodePersistentThing
         , readAllBoardIds
         , readAllBoardPlayerIds
-        , readBoard
-        , readPlayer
+        , readThing
         , writeBoard
         , writePlayer
         )
@@ -58,13 +57,8 @@ readAllBoardPlayerIds storage boardid =
     listKeys storage ("P:" ++ boardid ++ "/")
 
 
-readBoard : LocalStorage msg -> String -> Cmd msg
-readBoard storage boardid =
-    getItem storage boardid
-
-
-readPlayer : LocalStorage msg -> String -> Cmd msg
-readPlayer storage key =
+readThing : LocalStorage msg -> String -> Cmd msg
+readThing storage key =
     getItem storage key
 
 

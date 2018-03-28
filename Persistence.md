@@ -21,7 +21,7 @@ A `Board` is persisted separately from its `Player`s. This is so that not much n
     "2018-03-27T23:29:03"
     "2018-03-27T23:29:03-2"
     
-A persistent board key is "P:" prepended to the board id:
+A persistent board key is "B:" prepended to the board id:
     
     "B:2018-03-27T23:29:03"
     "B:2018-03-27T23:29:03-2"

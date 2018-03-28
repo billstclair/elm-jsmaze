@@ -16,12 +16,12 @@ Everything is persisted all the time. On the client, this means that the part of
 
 A `Board` is persisted separately from its `Player`s. This is so that not much needs to be written when a player moves.
 
-`Board.id` is world global. It is created by appending the date and time with an option index, to make it unique.
+`Board.id` is world global. It is created by appending the date and time with an optional index, to make it unique.
 
     "2018-03-27T23:29:03"
     "2018-03-27T23:29:03-2"
     
-A persistent board key is "B:" prepended to the board id:
+A persisted board key is "B:" prepended to the board id:
     
     "B:2018-03-27T23:29:03"
     "B:2018-03-27T23:29:03-2"

@@ -113,7 +113,8 @@ initialSize =
 
 initialPlayer : Player
 initialPlayer =
-    { id = 0
+    { id = "Joe Bob"
+    , boardid = ""
     , name = "Joe Bob"
     , location = ( 0, 0 )
     , direction = South

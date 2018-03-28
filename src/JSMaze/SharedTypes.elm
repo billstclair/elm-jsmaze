@@ -88,7 +88,8 @@ type alias Walls =
 
 
 type alias Player =
-    { id : Int
+    { id : String
+    , boardid : String
     , name : String
     , location : Location
     , direction : Direction

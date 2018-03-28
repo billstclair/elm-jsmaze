@@ -4,6 +4,8 @@ That game was up at [jsmaze.com](jsmaze.com) for many years, but I took it down 
 
 This project is a remake, from scratch, in Elm.
 
+See [persistence.md](https://github.com/billstclair/elm-jsmaze/blob/master/Persistence.md) for information about how boards and players are persisted.
+
 Bill St. Clair<br/>
 15 March, 2018
 

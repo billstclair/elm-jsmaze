@@ -46,75 +46,6 @@ import Json.Encode as JE exposing (Value)
 import LocalStorage exposing (LocalStorage, getItem, listKeys, setItem)
 
 
-type PersistentThing
-    = PersistentBoard Board
-    | PersistentPlayer Player
-
-
-type alias Thing =
-    { thingType : String
-    , value : Value
-    }
-
-
-encodeThing : String -> Value -> Value
-encodeThing thingType value =
-    JE.object
-        [ ( "type", JE.string thingType )
-        , ( "value", value )
-        ]
-
-
-thingDecoder : Decoder Thing
-thingDecoder =
-    JD.map2 Thing
-        (JD.field "type" JD.string)
-        (JD.field "value" JD.value)
-
-
-encodePersistentThing : PersistentThing -> Value
-encodePersistentThing thing =
-    case thing of
-        PersistentBoard board ->
-            encodeThing "board" <| encodeBoard board
-
-        PersistentPlayer player ->
-            encodeThing "player" <| encodePlayer player
-
-
-persistentThingDecoder : Decoder PersistentThing
-persistentThingDecoder =
-    thingDecoder |> JD.andThen thingToPersistentThing
-
-
-thingToPersistentThing : Thing -> Decoder PersistentThing
-thingToPersistentThing thing =
-    case thing.thingType of
-        "board" ->
-            case decodeBoard thing.value of
-                Ok board ->
-                    JD.succeed <| PersistentBoard board
-
-                Err msg ->
-                    JD.fail msg
-
-        "player" ->
-            case decodePlayer thing.value of
-                Ok player ->
-                    JD.succeed <| PersistentPlayer player
-
-                Err msg ->
-                    JD.fail msg
-
-        x ->
-            JD.fail <| "Unknown thing type: " ++ x
-
-
-decodePersistentThing : Value -> Result String PersistentThing
-decodePersistentThing value =
-    JD.decodeValue persistentThingDecoder value
-
-
 playerKey : Player -> String
 playerKey player =
     "P:" ++ player.boardid ++ "/" ++ player.id
@@ -147,11 +78,55 @@ readPlayer storage key =
 
 writeBoard : LocalStorage msg -> Board -> Cmd msg
 writeBoard storage board =
-    encodePersistentThing (PersistentBoard board)
+    encodeBoard board
         |> setItem storage (boardKey board)
 
 
 writePlayer : LocalStorage msg -> Player -> Cmd msg
 writePlayer storage player =
-    encodePersistentThing (PersistentPlayer player)
+    encodePlayer player
         |> setItem storage (playerKey player)
+
+
+type PersistentThingType
+    = PersistentBoardType
+    | PersistentPlayerType
+    | UnknownType
+
+
+type PersistentThing
+    = PersistentBoard Board
+    | PersistentPlayer Player
+
+
+keyType : String -> PersistentThingType
+keyType string =
+    if String.startsWith "B:" string then
+        PersistentBoardType
+    else if String.startsWith "P:" string then
+        PersistentPlayerType
+    else
+        UnknownType
+
+
+decodePersistentThing : String -> Value -> Result String PersistentThing
+decodePersistentThing key value =
+    case keyType key of
+        PersistentBoardType ->
+            case decodeBoard value of
+                Ok board ->
+                    Ok <| PersistentBoard board
+
+                Err msg ->
+                    Err msg
+
+        PersistentPlayerType ->
+            case decodePlayer value of
+                Ok player ->
+                    Ok <| PersistentPlayer player
+
+                Err msg ->
+                    Err msg
+
+        _ ->
+            Err <| "Unknown key type for \"" ++ key ++ "\""

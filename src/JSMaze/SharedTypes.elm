@@ -107,7 +107,8 @@ type alias Row =
 
 
 type alias Board =
-    { rows : Int
+    { id : String
+    , rows : Int
     , cols : Int
     , contents : Array Row
     }

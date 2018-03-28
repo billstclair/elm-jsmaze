@@ -1,6 +1,21 @@
 module Tests exposing (all)
 
 import Expect exposing (Expectation)
+import JSMaze.Board as Board
+    exposing
+        ( boardToStrings
+        , simpleBoard
+        , simpleBoardSpec
+        , stringsToBoard
+        )
+import JSMaze.EncodeDecode as ED
+    exposing
+        ( decodeBoard
+        , encodeBoard
+        , stringToValue
+        , valueToString
+        )
+import JSMaze.SharedTypes exposing (Board)
 import Test exposing (..)
 
 
@@ -13,8 +28,9 @@ all : Test
 all =
     Test.concat <|
         List.concat
-            [ List.map doTest intData
-            , List.map doTest intResultData
+            [ List.map doTest stringData
+            , List.map doTest stringListData
+            , List.map doTest boardResultData
             ]
 
 
@@ -73,18 +89,31 @@ doResultTest ( name, was, sb ) =
         )
 
 
-{-| Tests that return integers
+{-| Tests that return strings
 -}
-intData : List ( String, Int, Int )
-intData =
-    [ ( "1+1", 1 + 1, 2 )
+stringData : List ( String, String, String )
+stringData =
+    [ ( "1+2", "1" ++ "2", "12" )
     ]
 
 
-{-| Tests that return Results with integers.
+{-| Tests that return lists of strings
 -}
-intResultData : List ( String, Result String Int, Result String Int )
-intResultData =
-    [ ( "Error foo", Err "foo", Err "foo" )
-    , ( "Ok 1+1", Ok (1 + 1), Ok 2 )
+stringListData : List ( String, List String, List String )
+stringListData =
+    [ ( "stringsToBoard"
+      , simpleBoardSpec |> stringsToBoard |> boardToStrings
+      , simpleBoardSpec
+      )
+    ]
+
+
+{-| Tests that return Results with Boards
+-}
+boardResultData : List ( String, Result String Board, Result String Board )
+boardResultData =
+    [ ( "encodeBoard"
+      , simpleBoard |> encodeBoard |> decodeBoard
+      , Ok simpleBoard
+      )
     ]

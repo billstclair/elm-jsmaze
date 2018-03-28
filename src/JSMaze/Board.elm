@@ -20,6 +20,7 @@ module JSMaze.Board
         , makeEmptyBoard
         , removePlayer
         , separateBoardSpec
+        , setId
         , simpleBoard
         , simpleBoardSpec
         , stringsToBoard
@@ -187,10 +188,16 @@ makeEmptyBoard rows cols =
         contents =
             List.map (makeEmptyRow rows cols colnums) rownums
     in
-    { rows = rows
+    { id = ""
+    , rows = rows
     , cols = cols
     , contents = Array.fromList contents
     }
+
+
+setId : String -> Board -> Board
+setId id board =
+    { board | id = id }
 
 
 type alias WallSetter =

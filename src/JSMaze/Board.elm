@@ -46,39 +46,39 @@ import JSMaze.SharedTypes
 
 oldSimpleBoardSpec : BoardSpec
 oldSimpleBoardSpec =
-    [ " --------------- "
-    , "| |             |"
-    , "     ---------   "
-    , "|   |           |"
-    , "   -   --------- "
-    , "| |             |"
-    , "   -----------   "
-    , "|               |"
-    , " --------------- " -- Last row is extraneous
+    [ "--------"
+    , "||      "
+    , "  ----- "
+    , "| |     "
+    , " - -----"
+    , "||      "
+    , " ------ "
+    , "|       "
+    , "--------"
     ]
 
 
 simpleBoardSpec : BoardSpec
 simpleBoardSpec =
-    [ " ------------------- "
-    , "| |                 |"
-    , "     -------------   "
-    , "|   |             | |"
-    , "       ---------     "
-    , "| |   |         | | |"
-    , "         -----       "
-    , "| | |   |     | | | |"
-    , "           -         "
-    , "| | | | |   |   | | |"
-    , "         -           "
-    , "| | | |       |   | |"
-    , "       -------       "
-    , "| | |           |   |"
-    , "     -----------     "
-    , "| |               | |"
-    , "   ---------------   "
-    , "|                   |"
-    , " ------------------- "
+    [ "----------"
+    , "||        "
+    , "  ------- "
+    , "| |      |"
+    , "   -----  "
+    , "|| |    ||"
+    , "    ---   "
+    , "||| |  |||"
+    , "     -    "
+    , "||||| | ||"
+    , "    -     "
+    , "||||   | |"
+    , "   ----   "
+    , "|||     | "
+    , "  ------  "
+    , "||       |"
+    , " -------- "
+    , "|         "
+    , "----------"
     ]
 
 
@@ -93,33 +93,6 @@ type alias CharList =
 
 type alias CharListList =
     List CharList
-
-
-evenChars : String -> CharList
-evenChars string =
-    let
-        chars =
-            String.toList string
-
-        evens : CharList -> CharList -> CharList
-        evens =
-            \chars res ->
-                case chars of
-                    [] ->
-                        List.reverse res
-
-                    [ _ ] ->
-                        List.reverse res
-
-                    ch :: _ :: tail ->
-                        evens tail (ch :: res)
-    in
-    evens chars []
-
-
-oddChars : String -> CharList
-oddChars string =
-    evenChars <| String.dropLeft 1 string
 
 
 charsEqual : Char -> CharList -> WallSpec
@@ -149,7 +122,7 @@ separateBoardSpec spec =
                         ( List.reverse nss, List.reverse ews )
 
                     ns :: ew :: tail ->
-                        split tail ( oddChars ns :: nss, evenChars ew :: ews )
+                        split tail ( String.toList ns :: nss, String.toList ew :: ews )
 
         ( nss, ews ) =
             split spec ( [], [] )
@@ -386,15 +359,15 @@ boardToStrings board =
                 |> List.concatMap rowToStrings
 
         last =
-            String.repeat board.cols " -" ++ " "
+            String.repeat board.cols "-"
     in
     List.append prefix [ last ]
 
 
 rowToStrings : Row -> List String
 rowToStrings row =
-    [ rowToNorths row ++ " "
-    , rowToWests row ++ "|"
+    [ rowToNorths row
+    , rowToWests row
     ]
 
 
@@ -405,9 +378,9 @@ rowToNorths row =
         north =
             \cell ->
                 if cell.walls.north then
-                    " -"
+                    "-"
                 else
-                    "  "
+                    " "
     in
     Array.toList row
         |> List.map north
@@ -421,9 +394,9 @@ rowToWests row =
         west =
             \cell ->
                 if cell.walls.west then
-                    "| "
+                    "|"
                 else
-                    "  "
+                    " "
     in
     Array.toList row
         |> List.map west

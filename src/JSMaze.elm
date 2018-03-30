@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------
 --
 -- JSMaze.elm
--- Simple maze game.
+-- Simple maze game. Shared UI. Start from PortMaze or ReactorMaze.
 -- Copyright (c) 2018 Bill St. Clair <billstclair@gmail.com>
 -- Some rights reserved.
 -- Distributed under the MIT License
@@ -10,7 +10,7 @@
 ----------------------------------------------------------------------
 
 
-module JSMaze exposing (..)
+module JSMaze exposing (init, prefix, subscriptions, update, view)
 
 import Char
 import Debug exposing (log)
@@ -58,21 +58,41 @@ import Html.Attributes
         , width
         )
 import Html.Events exposing (onClick, onInput)
-import JSMaze.Board exposing (addPlayer, canMove, simpleBoard, updatePlayer)
+import JSMaze.Board
+    exposing
+        ( addPlayer
+        , canMove
+        , removePlayer
+        , simpleBoard
+        , updatePlayer
+        )
 import JSMaze.Entities exposing (copyright, nbsp)
+import JSMaze.Persistence as Persistence
+    exposing
+        ( PersistentThing(..)
+        , decodePersistentThing
+        , writeBoard
+        , writePlayer
+        )
 import JSMaze.Render exposing (render2d, render3d, renderControls)
 import JSMaze.SharedTypes
     exposing
         ( Board
         , Direction(..)
+        , Model
         , Msg(..)
         , Operation(..)
         , Player
+        , currentBoardId
+        , currentPlayerId
         , operationToDirection
         )
 import JSMaze.Styles as Styles
 import Keyboard exposing (KeyCode)
 import List.Extra as LE
+import LocalStorage exposing (LocalStorage, setPorts)
+import LocalStorage.DictPorts as DictPorts
+import LocalStorage.SharedTypes exposing (Ports, Value)
 import Svg.Button as Button exposing (Button, normalRepeatTime)
 import Task
 import Time exposing (Time)
@@ -84,26 +104,6 @@ initialSizeCmd =
     Task.perform (\x -> InitialSize x) Window.size
 
 
-main =
-    Html.program
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
-
-
-type alias Model =
-    { windowSize : Size
-    , board : Board
-    , player : Player
-    , isTouchAware : Bool
-    , forwardButton : Button Operation
-    , backButton : Button Operation
-    , subscription : Maybe ( Time, Button.Msg Msg Operation )
-    }
-
-
 initialSize : Size
 initialSize =
     { width = 500
@@ -113,8 +113,8 @@ initialSize =
 
 initialPlayer : Player
 initialPlayer =
-    { id = "Joe Bob"
-    , boardid = ""
+    { id = currentPlayerId
+    , boardid = currentBoardId
     , name = "Joe Bob"
     , location = ( 0, 0 )
     , direction = South
@@ -133,20 +133,46 @@ initialRepeatingButton operation =
 
 initialModel : Model
 initialModel =
+    let
+        board =
+            addPlayer initialPlayer simpleBoard
+    in
     { windowSize = initialSize
-    , board = addPlayer initialPlayer simpleBoard
+    , board = { board | id = currentBoardId }
     , player = initialPlayer
     , isTouchAware = False
     , forwardButton = initialRepeatingButton GoForward
     , backButton = initialRepeatingButton GoBack
     , subscription = Nothing
+    , storage = LocalStorage.make dictPorts prefix
     }
 
 
-init : ( Model, Cmd Msg )
-init =
-    initialModel
-        ! [ initialSizeCmd ]
+dictPorts : Ports Msg
+dictPorts =
+    DictPorts.make UpdatePorts prefix
+
+
+{-| LocalStorage key prefix.
+-}
+prefix : String
+prefix =
+    "jsmaze"
+
+
+init : Value -> Maybe (Ports Msg) -> ( Model, Cmd Msg )
+init value ports =
+    let
+        storage =
+            case ports of
+                Just p ->
+                    LocalStorage.make p prefix
+
+                Nothing ->
+                    initialModel.storage
+    in
+    { initialModel | storage = storage }
+        ! [ initialSizeCmd, Persistence.initialBoard storage ]
 
 
 updateButton : Button Operation -> Model -> Model
@@ -165,6 +191,46 @@ updateButton button model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        UpdatePorts operation ports key value ->
+            let
+                mdl =
+                    case ports of
+                        Nothing ->
+                            model
+
+                        Just p ->
+                            { model
+                                | storage = setPorts p model.storage
+                            }
+            in
+            case decodePersistentThing key value of
+                Err _ ->
+                    mdl ! []
+
+                Ok thing ->
+                    case thing of
+                        PersistentBoard board ->
+                            let
+                                newBoard =
+                                    addPlayer mdl.player <|
+                                        { board | id = currentBoardId }
+                            in
+                            { mdl | board = newBoard }
+                                ! []
+
+                        PersistentPlayer player ->
+                            { mdl
+                                | player = player
+                                , board =
+                                    removePlayer mdl.player mdl.board
+                                        |> addPlayer player
+                            }
+                                ! [ if player.id == currentPlayerId then
+                                        writeBoard mdl.storage mdl.board
+                                    else
+                                        Cmd.none
+                                  ]
+
         ButtonMsg msg ->
             case Button.checkSubscription msg of
                 Just ( time, msg ) ->
@@ -185,11 +251,20 @@ update msg model =
                         dir =
                             operationToDirection <| Button.getState button
 
-                        mdl =
+                        ( mdl, cmd2 ) =
                             if isClick then
-                                movePlayer dir model
+                                let
+                                    m =
+                                        movePlayer dir model
+                                in
+                                ( m
+                                , Cmd.batch
+                                    [ cmd
+                                    , writePlayer model.storage m.player
+                                    ]
+                                )
                             else
-                                model
+                                ( model, cmd )
                     in
                     updateButton button
                         { mdl
@@ -199,7 +274,7 @@ update msg model =
                                 else
                                     mdl.isTouchAware
                         }
-                        ! [ cmd ]
+                        ! [ cmd2 ]
 
         InitialSize size ->
             { model | windowSize = size }
@@ -209,7 +284,11 @@ update msg model =
             { model | windowSize = size } ! []
 
         DownKey code ->
-            processDownKey code model ! []
+            let
+                mdl =
+                    processDownKey code model
+            in
+            mdl ! [ writePlayer mdl.storage mdl.player ]
 
         Nop ->
             model ! []

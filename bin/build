@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Compile the application into site/index.html
+
+elm-make src/PortMaze.elm --output site/jsmaze.js

@@ -14,6 +14,7 @@ module JSMaze.Persistence
     exposing
         ( PersistentThing(..)
         , decodePersistentThing
+        , initialBoard
         , readAllBoardIds
         , readAllBoardPlayerIds
         , readThing
@@ -31,20 +32,34 @@ import JSMaze.EncodeDecode
 import JSMaze.SharedTypes
     exposing
         ( Board
+        , Msg(..)
         , Player
+        , currentBoardId
+        , currentPlayerId
         )
 import Json.Encode as JE exposing (Value)
 import LocalStorage exposing (LocalStorage, getItem, listKeys, setItem)
+import LocalStorage.SharedTypes exposing (Key)
 
 
 playerKey : Player -> String
 playerKey player =
-    "P:" ++ player.boardid ++ "/" ++ player.id
+    playerIdKey player.boardid player.id
+
+
+playerIdKey : String -> String -> String
+playerIdKey boardid playerid =
+    "P:" ++ boardid ++ "/" ++ playerid
 
 
 boardKey : Board -> String
 boardKey board =
-    "B:" ++ board.id
+    boardIdKey board.id
+
+
+boardIdKey : String -> String
+boardIdKey id =
+    "B:" ++ id
 
 
 readAllBoardIds : LocalStorage msg -> Cmd msg
@@ -95,7 +110,7 @@ keyType string =
         UnknownType
 
 
-decodePersistentThing : String -> Value -> Result String PersistentThing
+decodePersistentThing : Key -> Value -> Result String PersistentThing
 decodePersistentThing key value =
     case keyType key of
         PersistentBoardType ->
@@ -116,3 +131,11 @@ decodePersistentThing key value =
 
         _ ->
             Err <| "Unknown key type for \"" ++ key ++ "\""
+
+
+initialBoard : LocalStorage Msg -> Cmd Msg
+initialBoard storage =
+    Cmd.batch
+        [ readThing storage <| boardIdKey currentBoardId
+        , readThing storage <| playerIdKey currentBoardId currentPlayerId
+        ]

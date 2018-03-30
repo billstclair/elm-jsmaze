@@ -6,6 +6,20 @@ This project is a remake, from scratch, in Elm.
 
 See [persistence.md](https://github.com/billstclair/elm-jsmaze/blob/master/Persistence.md) for information about how boards and players are persisted.
 
+You can run it from `elm reactor`, but you'l only get session persistence:
+
+    cd .../elm-jsmaze
+    elm reactor
+
+Then aim your browser at http://localhost:8000/src/ReactorMaze.elm
+
+To update the site with real persistence:
+
+    cd .../elm-jsmaze
+    bin/build
+    
+Then aim your browser at file:///.../elm-jsmaze/site/index.html
+
 Bill St. Clair<br/>
 15 March, 2018
 

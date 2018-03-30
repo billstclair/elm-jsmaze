@@ -17,19 +17,37 @@ module JSMaze.SharedTypes
         , Cell
         , Direction(..)
         , Location
+        , Model
         , Msg(..)
         , Operation(..)
         , Player
         , Row
         , WallSpec
         , Walls
+        , currentBoardId
+        , currentPlayerId
         , operationToDirection
         , sumLocations
         )
 
 import Array exposing (Array)
-import Svg.Button as Button
+import LocalStorage exposing (LocalStorage)
+import LocalStorage.SharedTypes as LST exposing (Key, Ports, Value)
+import Svg.Button as Button exposing (Button)
+import Time exposing (Time)
 import Window exposing (Size)
+
+
+type alias Model =
+    { windowSize : Size
+    , board : Board
+    , player : Player
+    , isTouchAware : Bool
+    , forwardButton : Button Operation
+    , backButton : Button Operation
+    , subscription : Maybe ( Time, Button.Msg Msg Operation )
+    , storage : LocalStorage Msg
+    }
 
 
 type Operation
@@ -44,6 +62,7 @@ type Msg
     | Resize Size
     | DownKey Int
     | ButtonMsg (Button.Msg Msg Operation)
+    | UpdatePorts LST.Operation (Maybe (Ports Msg)) Key Value
     | Nop
 
 
@@ -87,6 +106,11 @@ type alias Walls =
     }
 
 
+currentPlayerId : String
+currentPlayerId =
+    "currentPlayer"
+
+
 type alias Player =
     { id : String
     , boardid : String
@@ -105,6 +129,11 @@ type alias Cell =
 
 type alias Row =
     Array Cell
+
+
+currentBoardId : String
+currentBoardId =
+    "current"
 
 
 type alias Board =

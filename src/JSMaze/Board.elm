@@ -85,7 +85,7 @@ simpleBoardSpec =
 
 simpleBoard : Board
 simpleBoard =
-    stringsToBoard simpleBoardSpec
+    stringsToBoard "simple" simpleBoardSpec
 
 
 type alias CharList =
@@ -188,7 +188,7 @@ makeEmptyBoard rows cols =
         contents =
             List.map (makeEmptyRow rows cols colnums) rownums
     in
-    { id = ""
+    { id = "empty"
     , rows = rows
     , cols = cols
     , contents = Array.fromList contents
@@ -328,11 +328,11 @@ setS walls =
     { walls | south = True }
 
 
-stringsToBoard : BoardSpec -> Board
-stringsToBoard spec =
+stringsToBoard : String -> BoardSpec -> Board
+stringsToBoard id spec =
     case stringsToBoardResult spec of
         Ok board ->
-            board
+            { board | id = id }
 
         Err _ ->
             makeEmptyBoard 1 1

@@ -65,7 +65,7 @@ boardSpecDecoder : JD.Decoder Board
 boardSpecDecoder =
     JD.list
         JD.string
-        |> JD.map stringsToBoard
+        |> JD.map (stringsToBoard "")
 
 
 boardDecoder : JD.Decoder Board

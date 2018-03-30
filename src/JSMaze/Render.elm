@@ -28,6 +28,7 @@ import JSMaze.SharedTypes
         , BoardSpec
         , Cell
         , Direction(..)
+        , Layout(..)
         , Location
         , Msg(..)
         , Operation(..)
@@ -587,8 +588,8 @@ repeatingButton size operation =
     Button.repeatingButton normalRepeatTime size operation
 
 
-renderControls : Float -> Bool -> Button Operation -> Button Operation -> Html Msg
-renderControls w isTouchAware forwardButton reverseButton =
+renderControls : Float -> Bool -> Layout -> Button Operation -> Button Operation -> Html Msg
+renderControls w isTouchAware layout forwardButton reverseButton =
     let
         ws =
             toString w
@@ -599,8 +600,11 @@ renderControls w isTouchAware forwardButton reverseButton =
         bw3s =
             toString (bw * 3)
 
-        bwo2 =
-            bw / 2
+        leftRightY =
+            if layout == NormalLayout then
+                bw / 2 + 2
+            else
+                2
 
         size : Button.Size
         size =
@@ -611,10 +615,15 @@ renderControls w isTouchAware forwardButton reverseButton =
         , height ws
         ]
         [ Button.render
-            ( 2, bwo2 )
+            ( 2, leftRightY )
             (TextContent "<")
             ButtonMsg
             (simpleButton size TurnLeft isTouchAware)
+        , Button.render
+            ( 2 * bw - 2, leftRightY )
+            (TextContent ">")
+            ButtonMsg
+            (simpleButton size TurnRight isTouchAware)
         , Button.render
             ( bw, 2 )
             (TextContent "^")
@@ -625,9 +634,35 @@ renderControls w isTouchAware forwardButton reverseButton =
             (TextContent "v")
             ButtonMsg
             (setSize size reverseButton)
-        , Button.render
-            ( 2 * bw - 2, bwo2 - 2 )
-            (TextContent ">")
-            ButtonMsg
-            (simpleButton size TurnRight isTouchAware)
+        , case layout of
+            TopViewLayout ->
+                g []
+                    [ Button.render
+                        ( 2, bw )
+                        (TextContent "Edit")
+                        ButtonMsg
+                        (simpleButton size EditMaze isTouchAware)
+                    , Button.render
+                        ( 2 * bw - 2, bw )
+                        (TextContent "Get")
+                        ButtonMsg
+                        (simpleButton size GetMaze isTouchAware)
+                    ]
+
+            EditingLayout ->
+                g []
+                    [ Button.render
+                        ( 2, bw )
+                        (TextContent "Save")
+                        ButtonMsg
+                        (simpleButton size SaveMaze isTouchAware)
+                    , Button.render
+                        ( 2 * bw - 2, bw )
+                        (TextContent "Init")
+                        ButtonMsg
+                        (simpleButton size GetMaze isTouchAware)
+                    ]
+
+            _ ->
+                g [] []
         ]

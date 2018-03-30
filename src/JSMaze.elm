@@ -178,6 +178,59 @@ init value ports =
         ! [ initialSizeCmd, Persistence.initialBoard storage ]
 
 
+saveModel : Model -> ( Model, Cmd Msg )
+saveModel model =
+    model ! [ writeModel model.storage model ]
+
+
+editMaze : Model -> ( Model, Cmd Msg )
+editMaze model =
+    saveModel { model | layout = EditingLayout }
+
+
+{-| This reverts to the default for now.
+
+Will eventually bring up a dialog to select a saved maze.
+
+-}
+getMaze : Model -> ( Model, Cmd Msg )
+getMaze model =
+    let
+        board =
+            simpleBoard
+
+        player =
+            model.player
+
+        ( x, y ) =
+            player.location
+
+        newPlayer =
+            if x >= board.rows || y >= board.cols then
+                { player
+                    | location = ( 0, 0 )
+                    , direction = South
+                }
+            else
+                player
+    in
+    saveModel
+        { model
+            | board = addPlayer newPlayer board
+            , layout = TopViewLayout
+        }
+
+
+{-| For now, this just exits editing mode.
+
+Will eventually bring up a dialog to type a name for saving.
+
+-}
+saveMaze : Model -> ( Model, Cmd Msg )
+saveMaze model =
+    saveModel { model | layout = TopViewLayout }
+
+
 toggleLayout : Model -> ( Model, Cmd Msg )
 toggleLayout model =
     let
@@ -283,6 +336,15 @@ update msg model =
                                 case operation of
                                     ToggleLayout ->
                                         toggleLayout model
+
+                                    EditMaze ->
+                                        editMaze model
+
+                                    GetMaze ->
+                                        getMaze model
+
+                                    SaveMaze ->
+                                        saveMaze model
 
                                     _ ->
                                         let
@@ -550,6 +612,7 @@ renderContent model =
         , space
         , renderControls (w / 3)
             model.isTouchAware
+            model.layout
             model.forwardButton
             model.backButton
         ]
@@ -568,7 +631,7 @@ view model =
             , p []
                 [ text "Use IJKL or WASD to move/rotate."
                 , br
-                , text "Click in small maze to make it big."
+                , text "Click in small maze view to make it big."
                 ]
             , p []
                 [ text "Maze editor coming soon. " ]

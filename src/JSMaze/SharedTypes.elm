@@ -78,6 +78,9 @@ type Operation
     | GoForward
     | GoBack
     | ToggleLayout
+    | EditMaze
+    | GetMaze
+    | SaveMaze
 
 
 type Msg

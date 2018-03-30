@@ -78,6 +78,7 @@ type Operation
     | GoForward
     | GoBack
     | ToggleLayout
+    | ToggleWall Direction Location
     | EditMaze
     | GetMaze
     | SaveMaze

@@ -20,6 +20,7 @@ module JSMaze.Board
         , makeEmptyBoard
         , removePlayer
         , separateBoardSpec
+        , setCell
         , setId
         , simpleBoard
         , simpleBoardSpec
@@ -474,6 +475,23 @@ getCell ( r, c ) board =
 
         Just row ->
             Array.get c row
+
+
+setCell : Location -> Cell -> Board -> Board
+setCell ( r, c ) cell board =
+    case Array.get r board.contents of
+        Nothing ->
+            board
+
+        Just row ->
+            let
+                newRow =
+                    Array.set c cell row
+
+                newContents =
+                    Array.set r newRow board.contents
+            in
+            { board | contents = newContents }
 
 
 canMove : Location -> Location -> Board -> Bool

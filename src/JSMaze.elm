@@ -62,7 +62,9 @@ import JSMaze.Board
     exposing
         ( addPlayer
         , canMove
+        , getCell
         , removePlayer
+        , setCell
         , simpleBoard
         , updatePlayer
         )
@@ -81,6 +83,7 @@ import JSMaze.SharedTypes
         ( Board
         , Direction(..)
         , Layout(..)
+        , Location
         , Model
         , Msg(..)
         , Operation(..)
@@ -248,6 +251,40 @@ toggleLayout model =
     mdl ! [ writeModel mdl.storage mdl ]
 
 
+toggleWall : Direction -> Location -> Model -> ( Model, Cmd Msg )
+toggleWall direction location model =
+    case getCell location model.board of
+        Nothing ->
+            model ! []
+
+        Just cell ->
+            let
+                walls =
+                    cell.walls
+
+                newWalls =
+                    case direction of
+                        West ->
+                            { walls | west = not walls.west }
+
+                        North ->
+                            { walls | north = not walls.north }
+
+                        _ ->
+                            walls
+
+                newCell =
+                    { cell | walls = newWalls }
+
+                newBoard =
+                    setCell location newCell model.board
+
+                mdl =
+                    { model | board = newBoard }
+            in
+            mdl ! [ writeModel mdl.storage mdl ]
+
+
 updateButton : Button Operation -> Model -> Model
 updateButton button model =
     case Button.getState button of
@@ -336,6 +373,9 @@ update msg model =
                                 case operation of
                                     ToggleLayout ->
                                         toggleLayout model
+
+                                    ToggleWall direction location ->
+                                        toggleWall direction location model
 
                                     EditMaze ->
                                         editMaze model
@@ -600,10 +640,13 @@ renderContent model =
         ( r1, r2 ) =
             case model.layout of
                 NormalLayout ->
-                    ( render3d, render2d )
+                    ( render3d, render2d False )
+
+                EditingLayout ->
+                    ( render2d True, render3d )
 
                 _ ->
-                    ( render2d, render3d )
+                    ( render2d False, render3d )
     in
     div []
         [ r1 w False model.player model.board

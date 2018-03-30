@@ -72,14 +72,24 @@ import Svg.Button as Button
         )
 
 
-render2d : Float -> Bool -> Player -> Board -> Html Msg
-render2d w withToggleButton player board =
+render2d : Bool -> Float -> Bool -> Player -> Board -> Html Msg
+render2d forEditing w withToggleButton player board =
     let
         rows =
             board.rows
+                + (if forEditing then
+                    1
+                   else
+                    0
+                  )
 
         cols =
             board.cols
+                + (if forEditing then
+                    1
+                   else
+                    0
+                  )
 
         frows =
             toFloat rows
@@ -92,6 +102,22 @@ render2d w withToggleButton player board =
 
         delta =
             w / fcols
+
+        outerw =
+            w
+                - (if forEditing then
+                    delta
+                   else
+                    0
+                  )
+
+        outerh =
+            h
+                - (if forEditing then
+                    delta
+                   else
+                    0
+                  )
     in
     svg
         [ width <| toString w
@@ -101,13 +127,13 @@ render2d w withToggleButton player board =
             [ class "SvgBorder"
             , x "1"
             , y "1"
-            , width <| toString (w - 2)
-            , height <| toString (h - 2)
+            , width <| toString (outerw - 2)
+            , height <| toString (outerh - 2)
             ]
             []
         , g [ class "SvgLine" ] <|
             List.indexedMap
-                (render2dRow delta)
+                (render2dRow forEditing delta)
                 (Array.toList board.contents)
         , render2dPlayer delta player
         , if withToggleButton then
@@ -117,16 +143,16 @@ render2d w withToggleButton player board =
         ]
 
 
-render2dRow : Float -> Int -> Row -> Svg Msg
-render2dRow delta rowidx row =
+render2dRow : Bool -> Float -> Int -> Row -> Svg Msg
+render2dRow forEditing delta rowidx row =
     g [] <|
         List.indexedMap
-            (render2dCell delta <| toFloat rowidx)
+            (render2dCell forEditing delta rowidx)
             (Array.toList row)
 
 
-render2dCell : Float -> Float -> Int -> Cell -> Svg Msg
-render2dCell delta rowidx colidx cell =
+render2dCell : Bool -> Float -> Int -> Int -> Cell -> Svg Msg
+render2dCell forEditing delta rowidx colidx cell =
     let
         walls =
             cell.walls
@@ -141,7 +167,7 @@ render2dCell delta rowidx colidx cell =
             delta * toFloat colidx
 
         y1f =
-            delta * rowidx
+            delta * toFloat rowidx
 
         x1s =
             toString x1f
@@ -149,8 +175,46 @@ render2dCell delta rowidx colidx cell =
         y1s =
             toString y1f
 
+        h =
+            delta / 2
+
+        q =
+            h / 2
+
+        x1fmq =
+            toString <| x1f - q
+
+        x1fpq =
+            toString <| x1f + q
+
+        y1fmq =
+            toString <| y1f - q
+
+        y1fpq =
+            toString <| y1f + q
+
+        hs =
+            toString h
+
+        g0 =
+            g [] []
+
+        westButton =
+            if forEditing && colidx > 0 then
+                g [ transform ("translate(" ++ x1fmq ++ " " ++ y1fpq ++ ")") ]
+                    [ renderOverlayButton (ToggleWall West ( rowidx, colidx )) h h ]
+            else
+                g0
+
+        northButton =
+            if forEditing && rowidx > 0 then
+                g [ transform ("translate(" ++ x1fpq ++ " " ++ y1fmq ++ ")") ]
+                    [ renderOverlayButton (ToggleWall North ( rowidx, colidx )) h h ]
+            else
+                g0
+
         northLine =
-            if north then
+            if north && rowidx > 0 then
                 Svg.line
                     [ x1 x1s
                     , x2 (toString <| x1f + delta)
@@ -159,10 +223,10 @@ render2dCell delta rowidx colidx cell =
                     ]
                     []
             else
-                g [] []
+                g0
 
         westLine =
-            if west then
+            if west && colidx > 0 then
                 Svg.line
                     [ x1 x1s
                     , x2 x1s
@@ -171,11 +235,11 @@ render2dCell delta rowidx colidx cell =
                     ]
                     []
             else
-                g [] []
+                g0
     in
-    if north then
-        if west then
-            g [] [ northLine, westLine ]
+    if north || forEditing then
+        if west || forEditing then
+            g [] [ northLine, westLine, northButton, westButton ]
         else
             northLine
     else
@@ -242,11 +306,15 @@ render2dPlayer delta player =
         []
 
 
-renderToggleButton : Float -> Float -> Svg Msg
-renderToggleButton width height =
+renderToggleButton =
+    renderOverlayButton ToggleLayout
+
+
+renderOverlayButton : Operation -> Float -> Float -> Svg Msg
+renderOverlayButton operation width height =
     let
         button =
-            Button.simpleButton ( width, height ) ToggleLayout
+            Button.simpleButton ( width, height ) operation
     in
     Button.renderOverlay ButtonMsg button
 

@@ -16,16 +16,19 @@ module JSMaze.SharedTypes
         , BoardSpec
         , Cell
         , Direction(..)
+        , Layout(..)
         , Location
         , Model
         , Msg(..)
         , Operation(..)
         , Player
         , Row
+        , SavedModel
         , WallSpec
         , Walls
         , currentBoardId
         , currentPlayerId
+        , defaultSavedModel
         , operationToDirection
         , sumLocations
         )
@@ -42,6 +45,7 @@ type alias Model =
     { windowSize : Size
     , board : Board
     , player : Player
+    , layout : Layout
     , isTouchAware : Bool
     , forwardButton : Button Operation
     , backButton : Button Operation
@@ -50,11 +54,30 @@ type alias Model =
     }
 
 
+type alias SavedModel =
+    { layout : Layout
+    }
+
+
+defaultSavedModel : SavedModel
+defaultSavedModel =
+    { layout = NormalLayout
+    }
+
+
+type Layout
+    = NormalLayout
+    | TopViewLayout
+    | EditingLayout
+    | NoLayout
+
+
 type Operation
     = TurnRight
     | TurnLeft
     | GoForward
     | GoBack
+    | ToggleLayout
 
 
 type Msg
@@ -87,6 +110,9 @@ operationToDirection operation =
 
         TurnRight ->
             East
+
+        _ ->
+            North
 
 
 type alias Location =

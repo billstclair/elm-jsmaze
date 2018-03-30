@@ -14,9 +14,11 @@ module JSMaze.EncodeDecode
     exposing
         ( decodeBoard
         , decodeBoardSpec
+        , decodeModel
         , decodePlayer
         , encodeBoard
         , encodeBoardSpec
+        , encodeModel
         , encodePlayer
         , stringToValue
         , valueToString
@@ -28,8 +30,11 @@ import JSMaze.SharedTypes
         ( Board
         , BoardSpec
         , Direction(..)
+        , Layout(..)
         , Location
+        , Model
         , Player
+        , SavedModel
         )
 import Json.Decode as JD
 import Json.Encode as JE exposing (Value)
@@ -44,6 +49,60 @@ stringToValue : String -> Value
 stringToValue string =
     JD.decodeString JD.value string
         |> Result.withDefault JE.null
+
+
+encodeLayout : Layout -> Value
+encodeLayout layout =
+    JE.string <| layoutToString layout
+
+
+layoutToString : Layout -> String
+layoutToString layout =
+    case layout of
+        TopViewLayout ->
+            "TopViewLayout"
+
+        EditingLayout ->
+            "EditingLayout"
+
+        _ ->
+            "NormalLayout"
+
+
+stringToLayout : String -> Layout
+stringToLayout string =
+    case string of
+        "TopViewLayout" ->
+            TopViewLayout
+
+        "EditingLayout" ->
+            EditingLayout
+
+        _ ->
+            NormalLayout
+
+
+layoutDecoder : JD.Decoder Layout
+layoutDecoder =
+    JD.map stringToLayout JD.string
+
+
+encodeModel : Model -> Value
+encodeModel model =
+    JE.object
+        [ ( "layout", encodeLayout model.layout )
+        ]
+
+
+modelDecoder : JD.Decoder SavedModel
+modelDecoder =
+    JD.map SavedModel
+        (JD.field "layout" layoutDecoder)
+
+
+decodeModel : Value -> Result String SavedModel
+decodeModel value =
+    JD.decodeValue modelDecoder value
 
 
 encodeBoard : Board -> Value

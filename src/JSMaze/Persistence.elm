@@ -19,27 +19,44 @@ module JSMaze.Persistence
         , readAllBoardPlayerIds
         , readThing
         , writeBoard
+        , writeModel
         , writePlayer
         )
 
 import JSMaze.EncodeDecode
     exposing
         ( decodeBoard
+        , decodeModel
         , decodePlayer
         , encodeBoard
+        , encodeModel
         , encodePlayer
         )
 import JSMaze.SharedTypes
     exposing
         ( Board
+        , Model
         , Msg(..)
         , Player
+        , SavedModel
         , currentBoardId
         , currentPlayerId
+        , defaultSavedModel
         )
 import Json.Encode as JE exposing (Value)
 import LocalStorage exposing (LocalStorage, getItem, listKeys, setItem)
 import LocalStorage.SharedTypes exposing (Key)
+
+
+modelKey : String
+modelKey =
+    "M:"
+
+
+writeModel : LocalStorage msg -> Model -> Cmd msg
+writeModel storage model =
+    encodeModel model
+        |> setItem storage modelKey
 
 
 playerKey : Player -> String
@@ -92,12 +109,14 @@ writePlayer storage player =
 type PersistentThingType
     = PersistentBoardType
     | PersistentPlayerType
+    | PersistentModelType
     | UnknownType
 
 
 type PersistentThing
     = PersistentBoard Board
     | PersistentPlayer Player
+    | PersistentModel SavedModel
 
 
 keyType : String -> PersistentThingType
@@ -106,6 +125,8 @@ keyType string =
         PersistentBoardType
     else if String.startsWith "P:" string then
         PersistentPlayerType
+    else if String.startsWith "M:" string then
+        PersistentModelType
     else
         UnknownType
 
@@ -129,6 +150,14 @@ decodePersistentThing key value =
                 Err msg ->
                     Err msg
 
+        PersistentModelType ->
+            case decodeModel value of
+                Ok model ->
+                    Ok <| PersistentModel model
+
+                Err msg ->
+                    Ok <| PersistentModel defaultSavedModel
+
         _ ->
             Err <| "Unknown key type for \"" ++ key ++ "\""
 
@@ -138,4 +167,5 @@ initialBoard storage =
     Cmd.batch
         [ readThing storage <| boardIdKey currentBoardId
         , readThing storage <| playerIdKey currentBoardId currentPlayerId
+        , readThing storage modelKey
         ]

@@ -72,6 +72,7 @@ import JSMaze.Persistence as Persistence
         ( PersistentThing(..)
         , decodePersistentThing
         , writeBoard
+        , writeModel
         , writePlayer
         )
 import JSMaze.Render exposing (render2d, render3d, renderControls)
@@ -79,6 +80,7 @@ import JSMaze.SharedTypes
     exposing
         ( Board
         , Direction(..)
+        , Layout(..)
         , Model
         , Msg(..)
         , Operation(..)
@@ -140,6 +142,7 @@ initialModel =
     { windowSize = initialSize
     , board = { board | id = currentBoardId }
     , player = initialPlayer
+    , layout = NoLayout
     , isTouchAware = False
     , forwardButton = initialRepeatingButton GoForward
     , backButton = initialRepeatingButton GoBack
@@ -173,6 +176,23 @@ init value ports =
     in
     { initialModel | storage = storage }
         ! [ initialSizeCmd, Persistence.initialBoard storage ]
+
+
+toggleLayout : Model -> ( Model, Cmd Msg )
+toggleLayout model =
+    let
+        layout =
+            case model.layout of
+                NormalLayout ->
+                    TopViewLayout
+
+                _ ->
+                    NormalLayout
+
+        mdl =
+            { model | layout = layout }
+    in
+    mdl ! [ writeModel mdl.storage mdl ]
 
 
 updateButton : Button Operation -> Model -> Model
@@ -209,6 +229,10 @@ update msg model =
 
                 Ok thing ->
                     case thing of
+                        PersistentModel savedModel ->
+                            { mdl | layout = savedModel.layout }
+                                ! []
+
                         PersistentBoard board ->
                             let
                                 newBoard =
@@ -248,23 +272,29 @@ update msg model =
                         ( isClick, button, cmd ) =
                             Button.update msg
 
+                        operation =
+                            Button.getState button
+
                         dir =
-                            operationToDirection <| Button.getState button
+                            operationToDirection operation
 
                         ( mdl, cmd2 ) =
                             if isClick then
-                                let
-                                    m =
-                                        movePlayer dir model
-                                in
-                                ( m
-                                , Cmd.batch
-                                    [ cmd
-                                    , writePlayer model.storage m.player
-                                    ]
-                                )
+                                case operation of
+                                    ToggleLayout ->
+                                        toggleLayout model
+
+                                    _ ->
+                                        let
+                                            m =
+                                                movePlayer dir model
+                                        in
+                                        m
+                                            ! [ cmd
+                                              , writePlayer model.storage m.player
+                                              ]
                             else
-                                ( model, cmd )
+                                model ! [ cmd ]
                     in
                     updateButton button
                         { mdl
@@ -496,49 +526,70 @@ space =
     text " "
 
 
-view : Model -> Html Msg
-view model =
+renderContent : Model -> Html Msg
+renderContent model =
     let
         ws =
             model.windowSize
 
         w =
             0.9 * toFloat (min ws.width (ws.height * 2 // 3))
+
+        ( r1, r2 ) =
+            case model.layout of
+                NormalLayout ->
+                    ( render3d, render2d )
+
+                _ ->
+                    ( render2d, render3d )
     in
-    div [ align "center" ]
-        [ Styles.style
-        , h2 []
-            [ text "JSMaze" ]
-        , render3d w model.player model.board
+    div []
+        [ r1 w False model.player model.board
         , br
-        , render2d (w / 3) (Just model.player) model.board
+        , r2 (w / 3) True model.player model.board
         , space
         , renderControls (w / 3)
             model.isTouchAware
             model.forwardButton
             model.backButton
-        , p []
-            [ text "Use IJKL or WASD to move/rotate." ]
-        , p []
-            [ text "Maze editor coming soon. " ]
-        , p []
-            [ logoLink "https://github.com/billstclair/elm-jsmaze"
-                "GitHub-Mark-32px.png"
-                "GitHub source code"
-                32
-            , space
-            , logoLink "http://elm-lang.org/"
-                "elm-logo-125x125.png"
-                "Elm inside"
-                28
-            , br
-            , text (copyright ++ " 2018 ")
-            , a [ href "https://GibGoyGames.com/" ]
-                [ text "Gib Goy Games" ]
-            , space
-            , mailLink "GibGoyGames@gmail.com"
-            ]
         ]
+
+
+view : Model -> Html Msg
+view model =
+    if model.layout == NoLayout then
+        div [] []
+    else
+        div [ align "center" ]
+            [ Styles.style
+            , h2 []
+                [ text "JSMaze" ]
+            , renderContent model
+            , p []
+                [ text "Use IJKL or WASD to move/rotate."
+                , br
+                , text "Click in small maze to make it big."
+                ]
+            , p []
+                [ text "Maze editor coming soon. " ]
+            , p []
+                [ logoLink "https://github.com/billstclair/elm-jsmaze"
+                    "GitHub-Mark-32px.png"
+                    "GitHub source code"
+                    32
+                , space
+                , logoLink "http://elm-lang.org/"
+                    "elm-logo-125x125.png"
+                    "Elm inside"
+                    28
+                , br
+                , text (copyright ++ " 2018 ")
+                , a [ href "https://GibGoyGames.com/" ]
+                    [ text "Gib Goy Games" ]
+                , space
+                , mailLink "GibGoyGames@gmail.com"
+                ]
+            ]
 
 
 subscriptions : Model -> Sub Msg

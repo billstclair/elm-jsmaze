@@ -71,8 +71,8 @@ import Svg.Button as Button
         )
 
 
-render2d : Float -> Maybe Player -> Board -> Html Msg
-render2d w player board =
+render2d : Float -> Bool -> Player -> Board -> Html Msg
+render2d w withToggleButton player board =
     let
         rows =
             board.rows
@@ -108,12 +108,11 @@ render2d w player board =
             List.indexedMap
                 (render2dRow delta)
                 (Array.toList board.contents)
-        , case player of
-            Nothing ->
-                g [] []
-
-            Just p ->
-                render2dPlayer delta p
+        , render2dPlayer delta player
+        , if withToggleButton then
+            renderToggleButton w h
+          else
+            g [] []
         ]
 
 
@@ -240,6 +239,15 @@ render2dPlayer delta player =
         , points <| p1 ++ " " ++ p2 ++ " " ++ p3
         ]
         []
+
+
+renderToggleButton : Float -> Float -> Svg Msg
+renderToggleButton width height =
+    let
+        button =
+            Button.simpleButton ( width, height ) ToggleLayout
+    in
+    Button.renderOverlay ButtonMsg button
 
 
 vanishingDistance : Int
@@ -529,8 +537,8 @@ render3dCell w cell =
         |> List.concat
 
 
-render3d : Float -> Player -> Board -> Html Msg
-render3d w player board =
+render3d : Float -> Bool -> Player -> Board -> Html Msg
+render3d w withToggleButton player board =
     let
         ws =
             toString w
@@ -558,6 +566,10 @@ render3d w player board =
             []
         , g [ class "SvgLine" ]
             cells
+        , if withToggleButton then
+            renderToggleButton w w
+          else
+            g [] []
         ]
 
 

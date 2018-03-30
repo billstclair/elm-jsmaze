@@ -333,7 +333,7 @@ toggleWall direction location model =
                 nb3 =
                     case westCell of
                         Nothing ->
-                            newBoard
+                            nb2
 
                         Just wc ->
                             setCell ( r, c - 1 ) wc nb2

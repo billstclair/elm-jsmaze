@@ -28,6 +28,7 @@ type SClass
     | SvgCellColor
     | SvgCellText
     | SvgObjectColor
+    | SvgEditorHighlight
 
 
 imports : List String
@@ -102,6 +103,14 @@ rules =
     , rule
         [ Class SvgCellText ]
         [ ( "font-weight", "bold" )
+        ]
+    , rule
+        [ Class SvgEditorHighlight ]
+        [ ( "stroke", "lightblue" )
+        , ( "fill", "lightblue" )
+        , ( "stroke-width", "1px" )
+        , ( "stroke-opacity", "0.1" )
+        , ( "fill-opacity", "0.1" )
         ]
     ]
 

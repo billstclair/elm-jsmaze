@@ -77,19 +77,9 @@ render2d forEditing w withToggleButton player board =
     let
         rows =
             board.rows
-                + (if forEditing then
-                    1
-                   else
-                    0
-                  )
 
         cols =
             board.cols
-                + (if forEditing then
-                    1
-                   else
-                    0
-                  )
 
         frows =
             toFloat rows
@@ -100,24 +90,20 @@ render2d forEditing w withToggleButton player board =
         h =
             w * frows / fcols
 
+        extra =
+            if forEditing then
+                0.5
+            else
+                0
+
         delta =
-            w / fcols
+            w / (fcols + extra)
 
         outerw =
-            w
-                - (if forEditing then
-                    delta
-                   else
-                    0
-                  )
+            fcols * delta
 
         outerh =
-            h
-                - (if forEditing then
-                    delta
-                   else
-                    0
-                  )
+            frows * delta
     in
     svg
         [ width <| toString w
@@ -202,14 +188,32 @@ render2dCell forEditing delta rowidx colidx cell =
         westButton =
             if forEditing && colidx > 0 then
                 g [ transform ("translate(" ++ x1fmq ++ " " ++ y1fpq ++ ")") ]
-                    [ renderOverlayButton (ToggleWall West ( rowidx, colidx )) h h ]
+                    [ Svg.rect
+                        [ x "0"
+                        , y "0"
+                        , width hs
+                        , height hs
+                        , class "SvgEditorHighlight"
+                        ]
+                        []
+                    , renderOverlayButton (ToggleWall West ( rowidx, colidx )) h h
+                    ]
             else
                 g0
 
         northButton =
             if forEditing && rowidx > 0 then
                 g [ transform ("translate(" ++ x1fpq ++ " " ++ y1fmq ++ ")") ]
-                    [ renderOverlayButton (ToggleWall North ( rowidx, colidx )) h h ]
+                    [ Svg.rect
+                        [ x "0"
+                        , y "0"
+                        , width hs
+                        , height hs
+                        , class "SvgEditorHighlight"
+                        ]
+                        []
+                    , renderOverlayButton (ToggleWall North ( rowidx, colidx )) h h
+                    ]
             else
                 g0
 

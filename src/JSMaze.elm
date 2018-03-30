@@ -253,12 +253,19 @@ toggleLayout model =
 
 toggleWall : Direction -> Location -> Model -> ( Model, Cmd Msg )
 toggleWall direction location model =
-    case getCell location model.board of
+    let
+        board =
+            model.board
+    in
+    case getCell location board of
         Nothing ->
             model ! []
 
         Just cell ->
             let
+                ( r, c ) =
+                    location
+
                 walls =
                     cell.walls
 
@@ -273,14 +280,66 @@ toggleWall direction location model =
                         _ ->
                             walls
 
+                northCell =
+                    case getCell ( r - 1, c ) board of
+                        Nothing ->
+                            Nothing
+
+                        Just nc ->
+                            let
+                                nw =
+                                    nc.walls
+                            in
+                            Just
+                                { nc
+                                    | walls =
+                                        { nw
+                                            | south = newWalls.north
+                                        }
+                                }
+
+                westCell =
+                    case getCell ( r, c - 1 ) board of
+                        Nothing ->
+                            Nothing
+
+                        Just wc ->
+                            let
+                                ww =
+                                    wc.walls
+                            in
+                            Just
+                                { wc
+                                    | walls =
+                                        { ww
+                                            | east = newWalls.west
+                                        }
+                                }
+
                 newCell =
                     { cell | walls = newWalls }
 
                 newBoard =
                     setCell location newCell model.board
 
+                nb2 =
+                    case northCell of
+                        Nothing ->
+                            newBoard
+
+                        Just nc ->
+                            setCell ( r - 1, c ) nc newBoard
+
+                nb3 =
+                    case westCell of
+                        Nothing ->
+                            newBoard
+
+                        Just wc ->
+                            setCell ( r, c - 1 ) wc nb2
+
                 mdl =
-                    { model | board = newBoard }
+                    { model | board = nb3 }
             in
             mdl ! [ writeModel mdl.storage mdl ]
 

@@ -15,7 +15,6 @@ module JSMaze.Persistence
         ( PersistentThing(..)
         , boardIdKey
         , decodePersistentThing
-        , initialBoard
         , modelKey
         , playerIdKey
         , readAllBoardIds
@@ -58,8 +57,8 @@ modelKey =
     "M:"
 
 
-writeModel : LocalStorage msg -> Model -> Cmd msg
-writeModel storage model =
+writeModel : Model -> LocalStorage msg -> Cmd msg
+writeModel model storage =
     encodeModel model
         |> setItem storage modelKey
 
@@ -99,14 +98,14 @@ readThing storage key =
     getItem storage key
 
 
-writeBoard : LocalStorage msg -> Board -> Cmd msg
-writeBoard storage board =
+writeBoard : Board -> LocalStorage msg -> Cmd msg
+writeBoard board storage =
     encodeBoard board
         |> setItem storage (boardKey board)
 
 
-writePlayer : LocalStorage msg -> Player -> Cmd msg
-writePlayer storage player =
+writePlayer : Player -> LocalStorage msg -> Cmd msg
+writePlayer player storage =
     encodePlayer player
         |> setItem storage (playerKey player)
 
@@ -165,12 +164,3 @@ decodePersistentThing key value =
 
         _ ->
             Err <| "Unknown key type for \"" ++ key ++ "\""
-
-
-initialBoard : LocalStorage Msg -> Cmd Msg
-initialBoard storage =
-    Cmd.batch
-        [ readThing storage <| boardIdKey currentBoardId
-        , readThing storage <| playerIdKey currentBoardId currentPlayerId
-        , readThing storage modelKey
-        ]

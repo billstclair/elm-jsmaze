@@ -208,8 +208,8 @@ type alias WallSetter =
     Int -> Bool -> Row -> Maybe Row -> ( Row, Maybe Row )
 
 
-setWalls : WallSetter -> List WallSpec -> Board -> Board
-setWalls setter wallSpecs board =
+wallSetter : WallSetter -> List WallSpec -> Board -> Board
+wallSetter setter wallSpecs board =
     let
         doCols : Int -> WallSpec -> Row -> Maybe Row -> ( Row, Maybe Row )
         doCols =
@@ -265,7 +265,7 @@ setWalls setter wallSpecs board =
 
 
 setNss =
-    setWalls setNs
+    wallSetter setNs
 
 
 setNs : Int -> Bool -> Row -> Maybe Row -> ( Row, Maybe Row )
@@ -284,7 +284,7 @@ setNs colnum isNs row rowAbove =
 
 
 setEws =
-    setWalls setEw
+    wallSetter setEw
 
 
 setEw : Int -> Bool -> Row -> Maybe Row -> ( Row, Maybe Row )
@@ -497,6 +497,26 @@ setCell ( r, c ) cell board =
             { board | contents = newContents }
 
 
+getWalls : Location -> Board -> Maybe Walls
+getWalls location board =
+    case getCell location board of
+        Nothing ->
+            Nothing
+
+        Just cell ->
+            Just cell.walls
+
+
+setWalls : Location -> Walls -> Board -> Board
+setWalls location walls board =
+    case getCell location board of
+        Nothing ->
+            board
+
+        Just cell ->
+            setCell location { cell | walls = walls } board
+
+
 maxSize : Int
 maxSize =
     20
@@ -518,99 +538,69 @@ resize ( newrows, newcols ) board =
         ( r, c ) =
             ( sizeLimit newrows, sizeLimit newcols )
 
+        ( maxr, maxc ) =
+            ( r - 1, c - 1 )
+
         ( or, oc ) =
             ( board.rows, board.cols )
 
-        ( minr, minc ) =
-            ( min r or, min c oc )
+        ( maxor, maxoc ) =
+            ( or - 1, oc - 1 )
     in
     if r == or && c == oc then
         board
     else
         let
-            players =
-                collectPlayers board
+            doCell : Int -> Int -> Board -> Board
+            doCell rowidx colidx b =
+                let
+                    location =
+                        ( rowidx, colidx )
+                in
+                case getWalls location board of
+                    Nothing ->
+                        b
 
-            nb0 =
-                makeEmptyBoard r c
+                    Just walls ->
+                        let
+                            nw =
+                                { walls
+                                    | south =
+                                        if rowidx == maxr then
+                                            True
+                                        else if rowidx >= maxor then
+                                            False
+                                        else
+                                            walls.south
+                                    , east =
+                                        if colidx == maxc then
+                                            True
+                                        else if colidx >= maxoc then
+                                            False
+                                        else
+                                            walls.east
+                                }
+                        in
+                        setWalls location nw b
 
-            nb =
-                { nb0 | id = board.id }
+            rownums =
+                List.range 0 maxr
 
             colnums =
-                List.range 0 (c - 1)
+                List.range 0 maxc
 
-            colLoop : Int -> Int -> Row -> Row
-            colLoop =
-                \rowidx colidx row ->
-                    if colidx >= minc then
-                        row
-                    else
-                        let
-                            cell =
-                                case getCell ( rowidx, colidx ) board of
-                                    Nothing ->
-                                        makeEmptyCell r c rowidx colidx
+            doRow : Int -> Board -> Board
+            doRow =
+                \rowidx b ->
+                    List.foldr (doCell rowidx) b colnums
 
-                                    Just cl ->
-                                        cl
-                        in
-                        colLoop
-                            rowidx
-                            (colidx + 1)
-                        <|
-                            Array.set colidx cell row
+            nb =
+                makeEmptyBoard r c
 
-            rowLoop : Int -> List Row -> Array Row
-            rowLoop =
-                \rowidx rows ->
-                    if rowidx >= minr then
-                        let
-                            emptyRows =
-                                if r <= or then
-                                    []
-                                else
-                                    List.map
-                                        (\ri ->
-                                            makeEmptyRow r c colnums ri
-                                        )
-                                        (List.range rowidx (r - 1))
-                        in
-                        Array.fromList <|
-                            List.concat [ List.reverse rows, emptyRows ]
-                    else
-                        let
-                            row =
-                                case Array.get rowidx board.contents of
-                                    Nothing ->
-                                        makeEmptyRow r c colnums rowidx
-
-                                    Just rw ->
-                                        if c == oc then
-                                            rw
-                                        else if c < oc then
-                                            AE.sliceUntil c rw
-                                        else
-                                            let
-                                                newcells =
-                                                    makeEmptyRow r c colnums rowidx
-                                                        |> Array.toList
-
-                                                oldcells =
-                                                    Array.toList rw
-                                            in
-                                            List.concat
-                                                [ oldcells
-                                                , List.drop oc newcells
-                                                ]
-                                                |> Array.fromList
-
-                            row2 =
-                                colLoop rowidx 0 row
-                        in
-                        rowLoop (rowidx + 1) <| row2 :: rows
+            players =
+                collectPlayers board
         in
-        { nb | contents = rowLoop 0 [] }
+        List.foldr doRow { nb | id = board.id } rownums
             |> addPlayers players
 
 

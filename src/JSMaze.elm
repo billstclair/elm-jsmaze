@@ -179,7 +179,7 @@ init value ports =
 
 saveModel : Model -> ( Model, Cmd Msg )
 saveModel model =
-    model ! [ writeModel model.storage model ]
+    model ! [ writeModel model model.storage ]
 
 
 editMaze : Model -> ( Model, Cmd Msg )
@@ -244,7 +244,7 @@ toggleLayout model =
         mdl =
             { model | layout = layout }
     in
-    mdl ! [ writeModel mdl.storage mdl ]
+    mdl ! [ writeModel mdl mdl.storage ]
 
 
 toggleWall : Direction -> Location -> Model -> ( Model, Cmd Msg )
@@ -337,7 +337,7 @@ toggleWall direction location model =
                 mdl =
                     { model | board = nb3 }
             in
-            mdl ! [ writeBoard mdl.storage nb3 ]
+            mdl ! [ writeBoard nb3 mdl.storage ]
 
 
 changeBoardSize : ( Int, Int ) -> Model -> ( Model, Cmd Msg )
@@ -350,7 +350,7 @@ changeBoardSize ( rowinc, colinc ) model =
             ( rowinc + board.rows, colinc + board.cols )
 
         nb =
-            Board.resize (log "size" size) board
+            Board.resize size board
 
         mdl =
             { model
@@ -358,10 +358,17 @@ changeBoardSize ( rowinc, colinc ) model =
                 , player = Board.fixPlayer nb model.player
             }
     in
-    mdl
-        ! [ writeBoard mdl.storage nb
-          , writePlayer mdl.storage mdl.player
-          ]
+    ( mdl
+    , chainWrites
+        [ writeBoard mdl.board
+        , writePlayer mdl.player
+        ]
+    )
+
+
+chainWrites : List (LocalStorage Msg -> Cmd Msg) -> Cmd Msg
+chainWrites writes =
+    Task.perform DoWrite <| Task.succeed writes
 
 
 updateButton : Button Operation -> Model -> Model
@@ -380,6 +387,17 @@ updateButton button model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        DoWrite writes ->
+            case writes of
+                [] ->
+                    model ! []
+
+                write :: rest ->
+                    model
+                        ! [ write model.storage
+                          , chainWrites rest
+                          ]
+
         UpdatePorts operation ports key value ->
             let
                 mdl =
@@ -392,37 +410,40 @@ update msg model =
                                 | storage = setPorts p model.storage
                             }
             in
-            case decodePersistentThing key value of
-                Err _ ->
-                    mdl ! []
+            if operation /= LocalStorage.SharedTypes.GetItemOperation then
+                mdl ! []
+            else
+                case decodePersistentThing key value of
+                    Err _ ->
+                        mdl ! []
 
-                Ok thing ->
-                    case thing of
-                        PersistentModel savedModel ->
-                            { mdl | layout = savedModel.layout }
-                                ! []
+                    Ok thing ->
+                        case thing of
+                            PersistentBoard board ->
+                                let
+                                    newBoard =
+                                        addPlayer mdl.player <|
+                                            { board | id = currentBoardId }
+                                in
+                                { mdl | board = newBoard }
+                                    ! [ Persistence.readThing
+                                            mdl.storage
+                                        <|
+                                            playerIdKey currentBoardId currentPlayerId
+                                      ]
 
-                        PersistentBoard board ->
-                            let
-                                newBoard =
-                                    addPlayer mdl.player <|
-                                        { board | id = currentBoardId }
-                            in
-                            { mdl | board = newBoard }
-                                ! [ Persistence.readThing
-                                        mdl.storage
-                                    <|
-                                        playerIdKey currentBoardId currentPlayerId
-                                  ]
+                            PersistentPlayer player ->
+                                { mdl
+                                    | player = player
+                                    , board =
+                                        removePlayer mdl.player mdl.board
+                                            |> addPlayer player
+                                }
+                                    ! [ Persistence.readThing mdl.storage modelKey ]
 
-                        PersistentPlayer player ->
-                            { mdl
-                                | player = player
-                                , board =
-                                    removePlayer mdl.player mdl.board
-                                        |> addPlayer player
-                            }
-                                ! [ Persistence.readThing mdl.storage modelKey ]
+                            PersistentModel savedModel ->
+                                { mdl | layout = savedModel.layout }
+                                    ! []
 
         ButtonMsg msg ->
             case Button.checkSubscription msg of
@@ -477,11 +498,9 @@ update msg model =
                                                 movePlayer dir model
                                         in
                                         m
-                                            ! [ cmd
-                                              , writePlayer model.storage m.player
-                                              ]
+                                            ! [ writePlayer m.player model.storage ]
                             else
-                                model ! [ cmd ]
+                                model ! []
                     in
                     updateButton button
                         { mdl
@@ -491,7 +510,7 @@ update msg model =
                                 else
                                     mdl.isTouchAware
                         }
-                        ! [ cmd2 ]
+                        ! [ cmd, cmd2 ]
 
         InitialSize size ->
             { model | windowSize = size }
@@ -505,7 +524,7 @@ update msg model =
                 mdl =
                     processDownKey code model
             in
-            mdl ! [ writePlayer mdl.storage mdl.player ]
+            mdl ! [ writePlayer mdl.player mdl.storage ]
 
         Nop ->
             model ! []

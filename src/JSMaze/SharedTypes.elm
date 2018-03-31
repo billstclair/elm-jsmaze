@@ -93,6 +93,7 @@ type Msg
     | DownKey Int
     | ButtonMsg (Button.Msg Msg Operation)
     | UpdatePorts LST.Operation (Maybe (Ports Msg)) Key Value
+    | DoWrite (List (LocalStorage Msg -> Cmd Msg))
     | Nop
 
 

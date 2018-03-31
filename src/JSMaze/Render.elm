@@ -72,8 +72,8 @@ import Svg.Button as Button
         )
 
 
-render2d : Bool -> Float -> Bool -> Player -> Board -> Html Msg
-render2d forEditing w withToggleButton player board =
+render2d : Bool -> Bool -> Float -> Bool -> Player -> Board -> Html Msg
+render2d forEditing isTouchAware w withToggleButton player board =
     let
         rows =
             board.rows
@@ -86,9 +86,6 @@ render2d forEditing w withToggleButton player board =
 
         fcols =
             toFloat cols
-
-        h =
-            w * frows / fcols
 
         extra =
             if forEditing then
@@ -104,6 +101,15 @@ render2d forEditing w withToggleButton player board =
 
         outerh =
             frows * delta
+
+        addcolw =
+            w - outerw
+
+        addcolSize =
+            ( addcolw, addcolw )
+
+        h =
+            outerh + addcolw
     in
     svg
         [ width <| toString w
@@ -119,26 +125,51 @@ render2d forEditing w withToggleButton player board =
             []
         , g [ class "SvgLine" ] <|
             List.indexedMap
-                (render2dRow forEditing delta)
+                (render2dRow isTouchAware forEditing delta)
                 (Array.toList board.contents)
+        , if not forEditing then
+            g [] []
+          else
+            g []
+                [ Button.render
+                    ( outerw - 2, 0 )
+                    (TextContent "+")
+                    ButtonMsg
+                    (simpleButton addcolSize (AddColumn 1) isTouchAware)
+                , Button.render
+                    ( outerw - 2, addcolw - 2 )
+                    (TextContent "-")
+                    ButtonMsg
+                    (simpleButton addcolSize (AddColumn -1) isTouchAware)
+                , Button.render
+                    ( 0, outerh - 2 )
+                    (TextContent "+")
+                    ButtonMsg
+                    (simpleButton addcolSize (AddRow 1) isTouchAware)
+                , Button.render
+                    ( addcolw - 2, outerh - 2 )
+                    (TextContent "-")
+                    ButtonMsg
+                    (simpleButton addcolSize (AddRow -1) isTouchAware)
+                ]
         , render2dPlayer delta player
         , if withToggleButton then
-            renderToggleButton w h
+            renderToggleButton isTouchAware w h
           else
             g [] []
         ]
 
 
-render2dRow : Bool -> Float -> Int -> Row -> Svg Msg
-render2dRow forEditing delta rowidx row =
+render2dRow : Bool -> Bool -> Float -> Int -> Row -> Svg Msg
+render2dRow isTouchAware forEditing delta rowidx row =
     g [] <|
         List.indexedMap
-            (render2dCell forEditing delta rowidx)
+            (render2dCell isTouchAware forEditing delta rowidx)
             (Array.toList row)
 
 
-render2dCell : Bool -> Float -> Int -> Int -> Cell -> Svg Msg
-render2dCell forEditing delta rowidx colidx cell =
+render2dCell : Bool -> Bool -> Float -> Int -> Int -> Cell -> Svg Msg
+render2dCell isTouchAware forEditing delta rowidx colidx cell =
     let
         walls =
             cell.walls
@@ -196,7 +227,11 @@ render2dCell forEditing delta rowidx colidx cell =
                         , class "SvgEditorHighlight"
                         ]
                         []
-                    , renderOverlayButton (ToggleWall West ( rowidx, colidx )) h h
+                    , renderOverlayButton
+                        (ToggleWall West ( rowidx, colidx ))
+                        isTouchAware
+                        h
+                        h
                     ]
             else
                 g0
@@ -212,7 +247,11 @@ render2dCell forEditing delta rowidx colidx cell =
                         , class "SvgEditorHighlight"
                         ]
                         []
-                    , renderOverlayButton (ToggleWall North ( rowidx, colidx )) h h
+                    , renderOverlayButton
+                        (ToggleWall North ( rowidx, colidx ))
+                        isTouchAware
+                        h
+                        h
                     ]
             else
                 g0
@@ -314,11 +353,11 @@ renderToggleButton =
     renderOverlayButton ToggleLayout
 
 
-renderOverlayButton : Operation -> Float -> Float -> Svg Msg
-renderOverlayButton operation width height =
+renderOverlayButton : Operation -> Bool -> Float -> Float -> Svg Msg
+renderOverlayButton operation isTouchAware width height =
     let
         button =
-            Button.simpleButton ( width, height ) operation
+            simpleButton ( width, height ) operation isTouchAware
     in
     Button.renderOverlay ButtonMsg button
 
@@ -610,8 +649,8 @@ render3dCell w cell =
         |> List.concat
 
 
-render3d : Float -> Bool -> Player -> Board -> Html Msg
-render3d w withToggleButton player board =
+render3d : Bool -> Float -> Bool -> Player -> Board -> Html Msg
+render3d isTouchAware w withToggleButton player board =
     let
         ws =
             toString w
@@ -640,7 +679,7 @@ render3d w withToggleButton player board =
         , g [ class "SvgLine" ]
             cells
         , if withToggleButton then
-            renderToggleButton w w
+            renderToggleButton isTouchAware w w
           else
             g [] []
         ]

@@ -58,7 +58,7 @@ import Html.Attributes
         , width
         )
 import Html.Events exposing (onClick, onInput)
-import JSMaze.Board
+import JSMaze.Board as Board
     exposing
         ( addPlayer
         , canMove
@@ -72,7 +72,10 @@ import JSMaze.Entities exposing (copyright, nbsp)
 import JSMaze.Persistence as Persistence
     exposing
         ( PersistentThing(..)
+        , boardIdKey
         , decodePersistentThing
+        , modelKey
+        , playerIdKey
         , writeBoard
         , writeModel
         , writePlayer
@@ -90,6 +93,7 @@ import JSMaze.SharedTypes
         , Player
         , currentBoardId
         , currentPlayerId
+        , initialPlayer
         , operationToDirection
         )
 import JSMaze.Styles as Styles
@@ -113,16 +117,6 @@ initialSize : Size
 initialSize =
     { width = 500
     , height = 500
-    }
-
-
-initialPlayer : Player
-initialPlayer =
-    { id = currentPlayerId
-    , boardid = currentBoardId
-    , name = "Joe Bob"
-    , location = ( 0, 0 )
-    , direction = South
     }
 
 
@@ -178,7 +172,9 @@ init value ports =
                     initialModel.storage
     in
     { initialModel | storage = storage }
-        ! [ initialSizeCmd, Persistence.initialBoard storage ]
+        ! [ initialSizeCmd
+          , Persistence.readThing storage <| boardIdKey currentBoardId
+          ]
 
 
 saveModel : Model -> ( Model, Cmd Msg )
@@ -341,7 +337,31 @@ toggleWall direction location model =
                 mdl =
                     { model | board = nb3 }
             in
-            mdl ! [ writeModel mdl.storage mdl ]
+            mdl ! [ writeBoard mdl.storage nb3 ]
+
+
+changeBoardSize : ( Int, Int ) -> Model -> ( Model, Cmd Msg )
+changeBoardSize ( rowinc, colinc ) model =
+    let
+        board =
+            model.board
+
+        size =
+            ( rowinc + board.rows, colinc + board.cols )
+
+        nb =
+            Board.resize (log "size" size) board
+
+        mdl =
+            { model
+                | board = nb
+                , player = Board.fixPlayer nb model.player
+            }
+    in
+    mdl
+        ! [ writeBoard mdl.storage nb
+          , writePlayer mdl.storage mdl.player
+          ]
 
 
 updateButton : Button Operation -> Model -> Model
@@ -389,7 +409,11 @@ update msg model =
                                         { board | id = currentBoardId }
                             in
                             { mdl | board = newBoard }
-                                ! []
+                                ! [ Persistence.readThing
+                                        mdl.storage
+                                    <|
+                                        playerIdKey currentBoardId currentPlayerId
+                                  ]
 
                         PersistentPlayer player ->
                             { mdl
@@ -398,11 +422,7 @@ update msg model =
                                     removePlayer mdl.player mdl.board
                                         |> addPlayer player
                             }
-                                ! [ if player.id == currentPlayerId then
-                                        writeBoard mdl.storage mdl.board
-                                    else
-                                        Cmd.none
-                                  ]
+                                ! [ Persistence.readThing mdl.storage modelKey ]
 
         ButtonMsg msg ->
             case Button.checkSubscription msg of
@@ -435,6 +455,12 @@ update msg model =
 
                                     ToggleWall direction location ->
                                         toggleWall direction location model
+
+                                    AddRow count ->
+                                        changeBoardSize ( count, 0 ) model
+
+                                    AddColumn count ->
+                                        changeBoardSize ( 0, count ) model
 
                                     EditMaze ->
                                         editMaze model
@@ -696,16 +722,19 @@ renderContent model =
         w =
             0.9 * toFloat (min ws.width (ws.height * 2 // 3))
 
+        ta =
+            model.isTouchAware
+
         ( r1, r2 ) =
             case model.layout of
                 NormalLayout ->
-                    ( render3d, render2d False )
+                    ( render3d ta, render2d False ta )
 
                 EditingLayout ->
-                    ( render2d True, render3d )
+                    ( render2d True ta, render3d ta )
 
                 _ ->
-                    ( render2d False, render3d )
+                    ( render2d False ta, render3d ta )
     in
     div []
         [ r1 w False model.player model.board

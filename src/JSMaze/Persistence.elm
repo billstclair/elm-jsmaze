@@ -13,8 +13,11 @@
 module JSMaze.Persistence
     exposing
         ( PersistentThing(..)
+        , boardIdKey
         , decodePersistentThing
         , initialBoard
+        , modelKey
+        , playerIdKey
         , readAllBoardIds
         , readAllBoardPlayerIds
         , readThing
@@ -23,6 +26,7 @@ module JSMaze.Persistence
         , writePlayer
         )
 
+import JSMaze.Board exposing (simpleBoard)
 import JSMaze.EncodeDecode
     exposing
         ( decodeBoard
@@ -42,6 +46,7 @@ import JSMaze.SharedTypes
         , currentBoardId
         , currentPlayerId
         , defaultSavedModel
+        , initialPlayer
         )
 import Json.Encode as JE exposing (Value)
 import LocalStorage exposing (LocalStorage, getItem, listKeys, setItem)
@@ -140,7 +145,7 @@ decodePersistentThing key value =
                     Ok <| PersistentBoard board
 
                 Err msg ->
-                    Err msg
+                    Ok <| PersistentBoard simpleBoard
 
         PersistentPlayerType ->
             case decodePlayer value of
@@ -148,7 +153,7 @@ decodePersistentThing key value =
                     Ok <| PersistentPlayer player
 
                 Err msg ->
-                    Err msg
+                    Ok <| PersistentPlayer initialPlayer
 
         PersistentModelType ->
             case decodeModel value of

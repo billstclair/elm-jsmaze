@@ -15,10 +15,12 @@ module JSMaze.Board
         ( addPlayer
         , boardToStrings
         , canMove
+        , fixPlayer
         , forwardDelta
         , getCell
         , makeEmptyBoard
         , removePlayer
+        , resize
         , separateBoardSpec
         , setCell
         , setId
@@ -30,6 +32,7 @@ module JSMaze.Board
         )
 
 import Array exposing (Array)
+import Array.Extra as AE
 import Debug exposing (log)
 import JSMaze.SharedTypes
     exposing
@@ -492,6 +495,153 @@ setCell ( r, c ) cell board =
                     Array.set r newRow board.contents
             in
             { board | contents = newContents }
+
+
+maxSize : Int
+maxSize =
+    20
+
+
+minSize : Int
+minSize =
+    3
+
+
+sizeLimit : Int -> Int
+sizeLimit size =
+    max minSize <| min maxSize size
+
+
+resize : ( Int, Int ) -> Board -> Board
+resize ( newrows, newcols ) board =
+    let
+        ( r, c ) =
+            ( sizeLimit newrows, sizeLimit newcols )
+
+        ( or, oc ) =
+            ( board.rows, board.cols )
+
+        ( minr, minc ) =
+            ( min r or, min c oc )
+    in
+    if r == or && c == oc then
+        board
+    else
+        let
+            players =
+                collectPlayers board
+
+            nb0 =
+                makeEmptyBoard r c
+
+            nb =
+                { nb0 | id = board.id }
+
+            colnums =
+                List.range 0 (c - 1)
+
+            colLoop : Int -> Int -> Row -> Row
+            colLoop =
+                \rowidx colidx row ->
+                    if colidx >= minc then
+                        row
+                    else
+                        let
+                            cell =
+                                case getCell ( rowidx, colidx ) board of
+                                    Nothing ->
+                                        makeEmptyCell r c rowidx colidx
+
+                                    Just cl ->
+                                        cl
+                        in
+                        colLoop
+                            rowidx
+                            (colidx + 1)
+                        <|
+                            Array.set colidx cell row
+
+            rowLoop : Int -> List Row -> Array Row
+            rowLoop =
+                \rowidx rows ->
+                    if rowidx >= minr then
+                        let
+                            emptyRows =
+                                if r <= or then
+                                    []
+                                else
+                                    List.map
+                                        (\ri ->
+                                            makeEmptyRow r c colnums ri
+                                        )
+                                        (List.range rowidx (r - 1))
+                        in
+                        Array.fromList <|
+                            List.concat [ List.reverse rows, emptyRows ]
+                    else
+                        let
+                            row =
+                                case Array.get rowidx board.contents of
+                                    Nothing ->
+                                        makeEmptyRow r c colnums rowidx
+
+                                    Just rw ->
+                                        if c == oc then
+                                            rw
+                                        else if c < oc then
+                                            AE.sliceUntil c rw
+                                        else
+                                            let
+                                                newcells =
+                                                    makeEmptyRow r c colnums rowidx
+                                                        |> Array.toList
+
+                                                oldcells =
+                                                    Array.toList rw
+                                            in
+                                            List.concat
+                                                [ oldcells
+                                                , List.drop oc newcells
+                                                ]
+                                                |> Array.fromList
+
+                            row2 =
+                                colLoop rowidx 0 row
+                        in
+                        rowLoop (rowidx + 1) <| row2 :: rows
+        in
+        { nb | contents = rowLoop 0 [] }
+            |> addPlayers players
+
+
+collectPlayers : Board -> List Player
+collectPlayers board =
+    List.concatMap
+        (\row ->
+            List.concatMap .players <| Array.toList row
+        )
+    <|
+        Array.toList board.contents
+
+
+fixPlayer : Board -> Player -> Player
+fixPlayer board player =
+    let
+        maxrow =
+            board.rows - 1
+
+        maxcol =
+            board.cols - 1
+
+        ( r, c ) =
+            player.location
+    in
+    { player | location = ( min maxrow r, min maxcol c ) }
+
+
+addPlayers : List Player -> Board -> Board
+addPlayers players board =
+    List.foldl addPlayer board <| List.map (fixPlayer board) players
 
 
 canMove : Location -> Location -> Board -> Bool

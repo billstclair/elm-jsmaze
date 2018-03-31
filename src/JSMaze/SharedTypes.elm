@@ -29,6 +29,7 @@ module JSMaze.SharedTypes
         , currentBoardId
         , currentPlayerId
         , defaultSavedModel
+        , initialPlayer
         , operationToDirection
         , sumLocations
         )
@@ -79,6 +80,8 @@ type Operation
     | GoBack
     | ToggleLayout
     | ToggleWall Direction Location
+    | AddColumn Int
+    | AddRow Int
     | EditMaze
     | GetMaze
     | SaveMaze
@@ -147,6 +150,16 @@ type alias Player =
     , name : String
     , location : Location
     , direction : Direction
+    }
+
+
+initialPlayer : Player
+initialPlayer =
+    { id = currentPlayerId
+    , boardid = currentBoardId
+    , name = "Joe Bob"
+    , location = ( 0, 0 )
+    , direction = South
     }
 
 

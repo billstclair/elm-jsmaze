@@ -781,10 +781,10 @@ view model =
             , p []
                 [ text "Use IJKL or WASD to move/rotate."
                 , br
-                , text "Click in small maze view to make it big."
+                , text "Click in the small maze view to make it big."
                 ]
             , p []
-                [ text "Maze editor coming soon. " ]
+                [ text "Server coming soon. " ]
             , p []
                 [ logoLink "https://github.com/billstclair/elm-jsmaze"
                     "GitHub-Mark-32px.png"

@@ -160,6 +160,12 @@ type ErrorKind
         }
 
 
+type alias Player =
+    { player : PlayerName
+    , game : GameName
+    }
+
+
 type Message
     = PingReq String
     | PongRsp String
@@ -173,86 +179,63 @@ type Message
         , currentGame : String
         , allGames : List Alias
         }
-    | Logout { playerid : PlayerId }
-    | Bye
+    | LogoutReq { playerid : PlayerId }
+    | LogoutRsp { players : List Player }
     | JoinGameReq
         { playerid : PlayerId
-        , player : PlayerName
-        , game : GameName
+        , player : Player
         }
     | NewGameReq
         { playerid : PlayerId
-        , player : PlayerName
-        , game : Game
+        , player : Player
         }
-    | JoinGameRsp
-        { player : PlayerName
-        , game : Game
-        }
-    | JoinGameNoticationRsp
-        { player : PlayerName
-        , game : GameName
-        }
+    | JoinGameRsp { player : Player }
+    | JoinGameNoticationRsp { player : Player }
     | LeaveReq
         { playerid : PlayerId
-        , player : PlayerName
-        , game : GameName
+        , player : Player
         }
-    | LeaveRsp
-        { player : PlayerName
-        , game : GameName
-        }
+    | LeaveRsp { player : Player }
     | ExitReq
         { playerid : PlayerId
-        , player : PlayerName
-        , game : GameName
+        , player : Player
         }
-    | ExitRsp
-        { player : PlayerName
-        , game : GameName
-        }
+    | ExitRsp { player : Player }
     | MoveReq
         { playerid : PlayerId
-        , player : PlayerName
-        , game : GameName
+        , player : Player
         , location : Maybe Location
         , direction : Maybe Direction
         }
     | MoveRsp
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         , location : Location
         , direction : Direction
         }
     | SetApearanceReq
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         , appearance : Appearance
         }
     | SetAppearanceRsp
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         , appearance : Appearance
         }
     | PaintWallReq
         { playerid : PlayerId
-        , player : PlayerName
-        , game : GameName
+        , player : Player
         , location : Location
         , direction : Direction
         , image : Maybe WallImage
         }
     | PaintWallRsp
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         , location : Location
         , direction : Direction
         , image : Maybe WallImage
         }
     | ListGameReq
         { playerid : PlayerId
-        , player : PlayerName
-        , game : GameName
+        , player : Player
         }
     | UnlistGameReq
         { playerid : PlayerId
@@ -260,8 +243,7 @@ type Message
         , switchOwnership : Maybe PlayerName
         }
     | ListGameRsp
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         , isListed : Bool
         }
     | GetListedGamesReq { playerid : PlayerId }
@@ -272,7 +254,6 @@ type Message
         , message : String
         }
     | ChatRsp
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         , message : String
         }

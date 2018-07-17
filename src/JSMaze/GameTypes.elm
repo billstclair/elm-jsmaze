@@ -234,6 +234,21 @@ type Message
         , game : GameName
         , appearance : Appearance
         }
+    | PaintWallReq
+        { playerid : PlayerId
+        , player : PlayerName
+        , game : GameName
+        , location : Location
+        , direction : Direction
+        , image : Maybe WallImage
+        }
+    | PaintWallRsp
+        { player : PlayerName
+        , game : GameName
+        , location : Location
+        , direction : Direction
+        , image : Maybe WallImage
+        }
     | ListGameReq
         { playerid : PlayerId
         , player : PlayerName

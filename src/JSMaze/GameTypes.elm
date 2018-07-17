@@ -82,8 +82,7 @@ type alias PlayerName =
 
 
 type alias GamePlayer =
-    { id : Maybe PlayerId
-    , name : PlayerName
+    { name : PlayerName
     , appearance : Appearance
     , location : Location
     , direction : Direction
@@ -111,3 +110,113 @@ type alias Game =
     , playerNamesDict : Dict Location (List PlayerName)
     , wallDict : Dict Location WallImages
     }
+
+
+type alias Alias =
+    { game : GameName
+    , player : PlayerName
+    }
+
+
+{-| Stored in server database.
+-}
+type alias Account =
+    { email : String
+    , oathProvider : Maybe String
+    , salt : String
+    , hash : String
+
+    -- These are stored under "<hash salt email>.currentGame"
+    -- and ".allGames" -> List Int, and .game.<int> -> Alias.
+    , currentGame : Alias
+    , allGames : List Alias
+    }
+
+
+
+{---- The wire protocol ----}
+
+
+type ErrorKind
+    = ValidationFailedError
+    | UnknownPlayerIdError PlayerId
+    | UnknownPlayerError
+        { player : PlayerName
+        , game : GameName
+        }
+    | IllegalMoveError
+        { player : PlayerName
+        , game : GameName
+        , location : Location
+        }
+
+
+type Message
+    = PingReq String
+    | PongRsp String
+    | ErrorRsp
+        { error : ErrorKind
+        , message : String
+        }
+    | LoginWithPasswordReq { email : String, passwordHash : String }
+    | LoginRsp
+        { playerid : PlayerId
+        , currentGame : String
+        , allGames : List Alias
+        }
+    | Logout { playerid : PlayerId }
+    | Bye
+    | JoinReq
+        { playerid : PlayerId
+        , player : PlayerName
+        , game : GameName
+        }
+    | JoinRsp
+        { player : PlayerName
+        , game : Game
+        }
+    | JoinNoticationRsp
+        { player : PlayerName
+        , game : GameName
+        }
+    | LeaveReq
+        { playerid : PlayerId
+        , player : PlayerName
+        , game : GameName
+        }
+    | LeaveRsp
+        { player : PlayerName
+        , game : GameName
+        }
+    | ExitReq
+        { playerid : PlayerId
+        , player : PlayerName
+        , game : GameName
+        }
+    | ExitRsp
+        { player : PlayerName
+        , game : GameName
+        }
+    | MoveReq
+        { playerid : PlayerId
+        , player : PlayerName
+        , game : GameName
+        , location : Maybe Location
+        , direction : Maybe Direction
+        }
+    | MoveRsp
+        { player : PlayerName
+        , game : GameName
+        , location : Location
+        , direction : Direction
+        }
+    | SetApearanceReq
+        { player : PlayerName
+        , game : GameName
+        , appearance : Appearance
+        }
+    | SetAppearanceRsp
+        { player : PlayerName
+        , game : GameName
+        , appearance : Appearance
+        }

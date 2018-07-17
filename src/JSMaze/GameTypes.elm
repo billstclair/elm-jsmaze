@@ -327,11 +327,14 @@ type
       -- Acknowledge a SaveAppearanceReq
     | SaveAppearanceRsp { name : String }
       -- Request a list of saved appearance names
-    | ListAppearancesReq
+    | ListAppearancesReq { playerid : PlayerId }
       -- Return that list of saved appearance names
     | ListAppearancesRsp { names : List String }
       -- Request a saved appearance
-    | GetAppearanceReq { name : String }
+    | GetAppearanceReq
+        { playerid : PlayerId
+        , name : String
+        }
       -- Return that saved appearance
     | GetAppearanceRsp
         { name : String
@@ -341,16 +344,19 @@ type
     | SaveImageReq
         { playerid : PlayerId
         , name : String
-        , appearance : Image
+        , image : Image
         }
       -- Acknowledge a SaveImageReq
     | SaveImageRsp { name : String }
       -- Request a list of saved appearance names
-    | ListImagesReq
+    | ListImagesReq { playerid : PlayerId }
       -- Return that list of saved appearance names
     | ListImagesRsp { names : List String }
       -- Request a saved appearance
-    | GetImageReq { name : String }
+    | GetImageReq
+        { playerid : PlayerId
+        , name : String
+        }
       -- Return that saved appearance
     | GetImageRsp
         { name : String

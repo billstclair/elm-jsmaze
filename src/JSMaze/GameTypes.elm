@@ -105,10 +105,19 @@ type alias GameName =
 
 type alias Game =
     { name : GameName
+    , description : String
+    , owner : PlayerName
     , board : Board
     , playerDict : Dict PlayerName GamePlayer
     , playerNamesDict : Dict Location (List PlayerName)
     , wallDict : Dict Location WallImages
+    }
+
+
+type alias GameDescription =
+    { name : GameName
+    , description : String
+    , owner : PlayerName
     }
 
 
@@ -166,16 +175,21 @@ type Message
         }
     | Logout { playerid : PlayerId }
     | Bye
-    | JoinReq
+    | JoinGameReq
         { playerid : PlayerId
         , player : PlayerName
         , game : GameName
         }
-    | JoinRsp
+    | NewGameReq
+        { playerid : PlayerId
+        , player : PlayerName
+        , game : Game
+        }
+    | JoinGameRsp
         { player : PlayerName
         , game : Game
         }
-    | JoinNoticationRsp
+    | JoinGameNoticationRsp
         { player : PlayerName
         , game : GameName
         }
@@ -219,4 +233,31 @@ type Message
         { player : PlayerName
         , game : GameName
         , appearance : Appearance
+        }
+    | ListGameReq
+        { playerid : PlayerId
+        , player : PlayerName
+        , game : GameName
+        }
+    | UnlistGameReq
+        { playerid : PlayerId
+        , game : GameName
+        , switchOwnership : Maybe PlayerName
+        }
+    | ListGameRsp
+        { player : PlayerName
+        , game : GameName
+        , isListed : Bool
+        }
+    | GetListedGamesReq { playerid : PlayerId }
+    | GetListedGamesRsp { games : List GameDescription }
+    | ChatReq
+        { playerid : PlayerId
+        , game : GameName
+        , message : String
+        }
+    | ChatRsp
+        { player : PlayerName
+        , game : GameName
+        , message : String
         }

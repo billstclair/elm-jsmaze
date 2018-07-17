@@ -121,12 +121,6 @@ type alias GameDescription =
     }
 
 
-type alias Alias =
-    { game : GameName
-    , player : PlayerName
-    }
-
-
 {-| Stored in server database.
 
 The salt is mixed with the `passwordHash` in the `LoginWithPasswordReq`
@@ -140,9 +134,9 @@ type alias Account =
     , hash : String
 
     -- These are stored under "<hash salt email>.currentGame"
-    -- and ".allGames" -> List Int, and .game.<int> -> Alias.
-    , currentGame : Alias
-    , allGames : List Alias
+    -- and ".allGames" -> List Int, and .game.<int> -> Player.
+    , currentGame : Player
+    , allGames : List Player
     }
 
 
@@ -193,7 +187,7 @@ type
     | LoginRsp
         { playerid : PlayerId
         , currentGame : String
-        , allGames : List Alias
+        , allGames : List Player
         }
       -- Logout of the current session. Do NOT exit any games.
     | LogoutReq { playerid : PlayerId }

@@ -29,8 +29,10 @@ module JSMaze.SharedTypes
         , currentBoardId
         , currentPlayerId
         , defaultSavedModel
+        , directionToString
         , initialPlayer
         , operationToDirection
+        , stringToDirection
         , sumLocations
         )
 
@@ -102,6 +104,41 @@ type Direction
     | South
     | East
     | West
+
+
+directionToString : Direction -> String
+directionToString direction =
+    case direction of
+        North ->
+            "north"
+
+        South ->
+            "south"
+
+        East ->
+            "east"
+
+        West ->
+            "west"
+
+
+stringToDirection : String -> Maybe Direction
+stringToDirection string =
+    case string of
+        "north" ->
+            Just North
+
+        "south" ->
+            Just South
+
+        "east" ->
+            Just East
+
+        "west" ->
+            Just West
+
+        _ ->
+            Nothing
 
 
 operationToDirection : Operation -> Direction

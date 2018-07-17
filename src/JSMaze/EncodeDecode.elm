@@ -35,6 +35,8 @@ import JSMaze.SharedTypes
         , Model
         , Player
         , SavedModel
+        , directionToString
+        , stringToDirection
         )
 import Json.Decode as JD
 import Json.Encode as JE exposing (Value)
@@ -161,18 +163,7 @@ locationDecoder =
 
 encodeDirection : Direction -> Value
 encodeDirection direction =
-    case direction of
-        North ->
-            JE.string "north"
-
-        South ->
-            JE.string "south"
-
-        East ->
-            JE.string "east"
-
-        West ->
-            JE.string "west"
+    JE.string <| directionToString direction
 
 
 directionDecoder : JD.Decoder Direction
@@ -180,18 +171,9 @@ directionDecoder =
     JD.string
         |> JD.andThen
             (\s ->
-                case s of
-                    "north" ->
-                        JD.succeed North
-
-                    "south" ->
-                        JD.succeed South
-
-                    "east" ->
-                        JD.succeed East
-
-                    "west" ->
-                        JD.succeed West
+                case stringToDirection s of
+                    Just dir ->
+                        JD.succeed dir
 
                     _ ->
                         JD.fail "Unknown Direction"

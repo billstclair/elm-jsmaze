@@ -196,7 +196,7 @@ getMaze : Model -> ( Model, Cmd Msg )
 getMaze model =
     let
         board =
-            simpleBoard
+            { simpleBoard | id = currentBoardId }
 
         player =
             model.player
@@ -212,12 +212,23 @@ getMaze model =
                 }
             else
                 player
+
+        newBoard =
+            addPlayer newPlayer board
+
+        mdl =
+            { model
+                | board = newBoard
+                , layout = TopViewLayout
+            }
     in
-    saveModel
-        { model
-            | board = addPlayer newPlayer board
-            , layout = TopViewLayout
-        }
+    mdl
+        ! [ chainWrites
+                [ writeBoard newBoard
+                , writePlayer newPlayer
+                , writeModel mdl
+                ]
+          ]
 
 
 {-| For now, this just exits editing mode.

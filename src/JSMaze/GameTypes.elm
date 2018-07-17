@@ -14,10 +14,13 @@ module GameTypes
     exposing
         ( Appearance(..)
         , Game
+        , GameName
         , GamePlayer
         , Image(..)
         , PlayerName
         , Point
+        , SideImages
+        , Url
         , WallImage
         , WallImages
         )
@@ -28,41 +31,38 @@ import JSMaze.SharedTypes
     exposing
         ( Board
         , BoardSpec
-        , Cell
         , Direction(..)
-        , Layout(..)
         , Location
-        , Model
-        , Msg(..)
-        , Operation(..)
-        , Player
-        , Row
-        , SavedModel
-        , WallSpec
-        , Walls
-        , currentBoardId
-        , currentPlayerId
-        , defaultSavedModel
-        , initialPlayer
-        , operationToDirection
-        , sumLocations
         )
 import WebSocketFramework.Types exposing (GameId, PlayerId)
 
 
-type alias PlayerName =
+{-| (x, y)
+-}
+type alias Point =
+    ( Float, Float )
+
+
+type alias Url =
     String
 
 
-type alias Point =
-    { x : Float
-    , y : Float
-    }
+{-| This will eventually include an entire SVG image package.
 
+For now, it either a URL of an image or a list of line lists.
 
+-}
 type Image
-    = UrlImage String
+    = UrlImage Url
     | VectorImage (List (List Point))
+
+
+type alias SideImages =
+    { front : List Image
+    , back : List Image
+    , left : List Image
+    , right : List Image
+    }
 
 
 type Appearance
@@ -74,6 +74,11 @@ type Appearance
         , left : Image
         , right : Image
         }
+    | VaryingAppearance SideImages
+
+
+type alias PlayerName =
+    String
 
 
 type alias GamePlayer =
@@ -95,9 +100,14 @@ type alias WallImages =
     List ( Direction, WallImage )
 
 
+type alias GameName =
+    String
+
+
 type alias Game =
-    { board : Board
-    , namePlayerDict : Dict PlayerName GamePlayer
-    , locPlayersDict : Dict Location (List PlayerName)
+    { name : GameName
+    , board : Board
+    , playerDict : Dict PlayerName GamePlayer
+    , playerNamesDict : Dict Location (List PlayerName)
     , wallDict : Dict Location WallImages
     }

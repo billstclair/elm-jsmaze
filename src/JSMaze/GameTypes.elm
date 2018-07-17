@@ -128,10 +128,14 @@ type alias Alias =
 
 
 {-| Stored in server database.
+
+The salt is mixed with the `passwordHash` in the `LoginWithPasswordReq`
+Message, and hashed to the `hash`.
+
 -}
 type alias Account =
     { email : String
-    , oathProvider : Maybe String
+    , oauthProvider : Maybe String
     , salt : String
     , hash : String
 
@@ -166,60 +170,98 @@ type alias Player =
     }
 
 
-type Message
+type
+    Message
+    -- A request for a pong, just to ensure the server is up.
     = PingReq String
     | PongRsp String
+      -- Returned when an error occurs
     | ErrorRsp
         { error : ErrorKind
         , message : String
         }
+      -- When I figure out how to do it, there will also be
+      -- a way to login from an oauthProvier
+      -- passwordHash is a simple hash of the user-typed password
     | LoginWithPasswordReq { email : String, passwordHash : String }
+      -- Sent to only the requester
     | LoginRsp
         { playerid : PlayerId
         , currentGame : String
         , allGames : List Alias
         }
+      -- Logout of the current session. Do NOT exit any games.
     | LogoutReq { playerid : PlayerId }
+      -- Sent to everybody, so they all know these players are now inactive.
     | LogoutRsp { players : List Player }
+      -- Join an existing game as the given player.
+      -- Can be either a brand new player, or a player already associated
+      -- with this login and the given GameName.
     | JoinGameReq
         { playerid : PlayerId
         , player : Player
         }
+      -- Create a brand new game, with a brand new GameName.
+      -- The game is initially private, meaning you have to know its name
+      -- to join it.
     | NewGameReq
         { playerid : PlayerId
-        , player : Player
+        , game : Game
         }
-    | JoinGameRsp { player : Player }
-    | JoinGameNoticationRsp { player : Player }
+      -- Sent to the joiner only doesn't yet have a player in this game.
+    | JoinGameRsp
+        { player : Player
+        , game : Game
+        }
+      -- Sent to all existing members of the game when someone joins.
+    | JoinGameNotificationRsp
+        { player : Player
+        , location : Location
+        , direction : Direction
+        }
+      -- Sent to become idle, but not exist from a game.
     | LeaveReq
         { playerid : PlayerId
         , player : Player
         }
+      -- Sent to all members of the game when a player leaves.
     | LeaveRsp { player : Player }
+      -- Exit from a game and disown all of your wall images.
     | ExitReq
         { playerid : PlayerId
         , player : Player
         }
+      -- Sent to all members of a game when a player exits.
     | ExitRsp { player : Player }
+      -- Move location and/or change direction.
+      -- It will usually be illegal to move more than one square or through a wall.
+      -- This may be allowed by some future God mode.
     | MoveReq
         { playerid : PlayerId
         , player : Player
         , location : Maybe Location
         , direction : Maybe Direction
         }
+      -- Sent to all members of a game after a player moves.
     | MoveRsp
         { player : Player
         , location : Location
         , direction : Direction
         }
+      -- Change your appearance.
     | SetApearanceReq
-        { player : Player
+        { playerid : PlayerId
+        , player : Player
         , appearance : Appearance
         }
+      -- Sent to all members of a game when a player changes his appearance.
     | SetAppearanceRsp
         { player : Player
         , appearance : Appearance
         }
+      -- Paint a wall, or change the painting if the existing painting is
+      -- either yours or unowned.
+      -- If `Nothing` is sent for the `image`, unpaints.
     | PaintWallReq
         { playerid : PlayerId
         , player : Player
@@ -227,32 +269,44 @@ type Message
         , direction : Direction
         , image : Maybe WallImage
         }
+      -- Sent to all members when a member paints/unpaints a wall.
     | PaintWallRsp
         { player : Player
         , location : Location
         , direction : Direction
         , image : Maybe WallImage
         }
+      -- Make a game that you own public.
     | ListGameReq
         { playerid : PlayerId
         , player : Player
         }
+      -- Make a game that you own no longer public.
+      -- Optionally switch its ownership.
+      -- If switchOwnership is `Just ""`, make the game unowned.
+      -- Otherwise, a new owner must be a member.
+      -- As soon as all members exit a private game, it will be destroyed.
     | UnlistGameReq
         { playerid : PlayerId
         , game : GameName
         , switchOwnership : Maybe PlayerName
         }
+      -- Sent to all members when a game is listed or unlisted.
     | ListGameRsp
         { player : Player
         , isListed : Bool
         }
+      -- Request a list of public games.
     | GetListedGamesReq { playerid : PlayerId }
+      -- The list of public games.
     | GetListedGamesRsp { games : List GameDescription }
+      -- Send a chat message to a game.
     | ChatReq
         { playerid : PlayerId
         , game : GameName
         , message : String
         }
+      -- Receive that chat message.
     | ChatRsp
         { player : Player
         , message : String

@@ -154,14 +154,19 @@ type ErrorKind
     = ValidationFailedError
     | UnknownPlayerIdError PlayerId
     | UnknownPlayerError
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         }
     | IllegalMoveError
-        { player : PlayerName
-        , game : GameName
+        { player : Player
         , location : Location
         }
+    | IllegalWallLocationError
+        { player : Player
+        , location : Location
+        , direction : Direction
+        }
+    | UnknownAppearanceError { name : String }
+    | UnknownImageError { name : String }
 
 
 type alias Player =
@@ -208,7 +213,9 @@ type
         { playerid : PlayerId
         , game : Game
         }
-      -- Sent to the joiner only doesn't yet have a player in this game.
+      -- Sent to the joiner only, if he didn't yet have a player in this game.
+      -- Otherwise, the joiner will get a JoinGameNotificationRsp, like
+      -- everybody else.
     | JoinGameRsp
         { player : Player
         , game : Game
@@ -219,7 +226,7 @@ type
         , location : Location
         , direction : Direction
         }
-      -- Sent to become idle, but not exist from a game.
+      -- Sent to become idle, but not exit from a game.
     | LeaveReq
         { playerid : PlayerId
         , player : Player
@@ -303,11 +310,49 @@ type
       -- Send a chat message to a game.
     | ChatReq
         { playerid : PlayerId
-        , game : GameName
+        , player : Player
         , message : String
         }
       -- Receive that chat message.
     | ChatRsp
         { player : Player
         , message : String
+        }
+      -- Save an appearance for lookup by ListAppearancesReq or GetAppearanceReq
+    | SaveAppearanceReq
+        { playerid : PlayerId
+        , name : String
+        , appearance : Appearance
+        }
+      -- Acknowledge a SaveAppearanceReq
+    | SaveAppearanceRsp { name : String }
+      -- Request a list of saved appearance names
+    | ListAppearancesReq
+      -- Return that list of saved appearance names
+    | ListAppearancesRsp { names : List String }
+      -- Request a saved appearance
+    | GetAppearanceReq { name : String }
+      -- Return that saved appearance
+    | GetAppearanceRsp
+        { name : String
+        , appearance : Appearance
+        }
+      -- Save an image for lookup by ListImagesReq or GetImageReq
+    | SaveImageReq
+        { playerid : PlayerId
+        , name : String
+        , appearance : Image
+        }
+      -- Acknowledge a SaveImageReq
+    | SaveImageRsp { name : String }
+      -- Request a list of saved appearance names
+    | ListImagesReq
+      -- Return that list of saved appearance names
+    | ListImagesRsp { names : List String }
+      -- Request a saved appearance
+    | GetImageReq { name : String }
+      -- Return that saved appearance
+    | GetImageRsp
+        { name : String
+        , image : Image
         }

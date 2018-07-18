@@ -20,26 +20,33 @@ module JSMaze.EncodeDecode
         , encodeBoardSpec
         , encodeModel
         , encodePlayer
+        , messageDecoder
+        , messageEncoder
         , stringToValue
         , valueToString
         )
 
+import Dict exposing (Dict)
 import JSMaze.Board exposing (boardToStrings, setId, stringsToBoard)
 import JSMaze.GameTypes
     exposing
         ( Appearance(..)
+        , ErrorKind(..)
+        , FullPlayer
         , Game
+        , GameDescription
         , GameName
         , GamePlayer
         , Image(..)
         , Message(..)
+        , OwnedPlace
+        , OwnedPlacement
+        , PaintedWall
         , PlayerName
         , Point
         , SideImages
         , StaticImages
         , Url
-        , WallImage
-        , WallImages
         )
 import JSMaze.SharedTypes
     exposing
@@ -359,4 +366,282 @@ appearanceDecoder =
             JD.field "StaticImageAppearance" staticImagesDecoder
         , JD.map VaryingAppearance <|
             JD.field "VaryingAppearance" sideImagesDecoder
+        ]
+
+
+fullPlayerEncoder : FullPlayer -> Value
+fullPlayerEncoder player =
+    JE.object
+        [ ( "name", JE.string player.name )
+        , ( "appearance", appearanceEncoder player.appearance )
+        , ( "location", encodeLocation player.location )
+        , ( "direction", encodeDirection player.direction )
+        ]
+
+
+fullPlayerDecoder : Decoder FullPlayer
+fullPlayerDecoder =
+    decode FullPlayer
+        |> required "name" JD.string
+        |> required "appearance" appearanceDecoder
+        |> required "location" locationDecoder
+        |> required "direction" directionDecoder
+
+
+paintedWallEncoder : PaintedWall -> Value
+paintedWallEncoder image =
+    JE.object
+        [ ( "owner", JE.string image.owner )
+        , ( "location", encodeLocation image.location )
+        , ( "direction", encodeDirection image.direction )
+        , ( "image", imageEncoder image.image )
+        ]
+
+
+paintedWallDecoder : Decoder PaintedWall
+paintedWallDecoder =
+    decode PaintedWall
+        |> required "owner" JD.string
+        |> required "location" locationDecoder
+        |> required "direction" directionDecoder
+        |> required "image" imageDecoder
+
+
+{-| We'll need another encoder for the persistent store.
+
+It will store the dicts as separately-indexed items, to reduce bandwidth.
+
+-}
+gameEncoder : Game -> Value
+gameEncoder game =
+    JE.object
+        [ ( "name", JE.string game.name )
+        , ( "description", JE.string game.description )
+        , ( "owner", JE.string game.owner )
+        , ( "board", encodeBoard game.board )
+        , ( "players"
+          , JE.list
+                (List.map fullPlayerEncoder <|
+                    Dict.values game.playerDict
+                )
+          )
+        , ( "walls"
+          , JE.list
+                (List.map paintedWallEncoder <|
+                    List.concat (Dict.values game.wallsDict)
+                )
+          )
+        ]
+
+
+makeGame : String -> String -> String -> Board -> List FullPlayer -> List PaintedWall -> Game
+makeGame name description owner board players walls =
+    let
+        playerNamesDict =
+            List.foldl
+                (\player dict ->
+                    Dict.insert player.location
+                        (case Dict.get player.location dict of
+                            Nothing ->
+                                [ player.name ]
+
+                            Just players ->
+                                player.name :: players
+                        )
+                        dict
+                )
+                Dict.empty
+                players
+
+        wallsDict =
+            List.foldl
+                (\wall dict ->
+                    Dict.insert wall.location
+                        (case Dict.get wall.location dict of
+                            Nothing ->
+                                [ wall ]
+
+                            Just walls ->
+                                wall :: walls
+                        )
+                        dict
+                )
+                Dict.empty
+                walls
+    in
+    { name = name
+    , description = description
+    , owner = owner
+    , board = board
+    , playerDict =
+        Dict.fromList <|
+            List.map (\player -> ( player.name, player )) players
+    , playerNamesDict = playerNamesDict
+    , wallsDict = wallsDict
+    }
+
+
+gameDecoder : Decoder Game
+gameDecoder =
+    decode makeGame
+        |> required "name" JD.string
+        |> required "description" JD.string
+        |> required "owner" JD.string
+        |> required "board" boardDecoder
+        |> required "players" (JD.list fullPlayerDecoder)
+        |> required "walls" (JD.list paintedWallDecoder)
+
+
+gameDescriptionEncoder : GameDescription -> Value
+gameDescriptionEncoder description =
+    JE.object
+        [ ( "name", JE.string description.name )
+        , ( "description", JE.string description.description )
+        , ( "owner", JE.string description.owner )
+        ]
+
+
+gameDescriptionDecoder : Decoder GameDescription
+gameDescriptionDecoder =
+    decode GameDescription
+        |> required "name" JD.string
+        |> required "description" JD.string
+        |> required "owner" JD.string
+
+
+gamePlayerEncoder : GamePlayer -> Value
+gamePlayerEncoder player =
+    JE.object
+        [ ( "player", JE.string player.player )
+        , ( "game", JE.string player.game )
+        ]
+
+
+gamePlayerDecoder : Decoder GamePlayer
+gamePlayerDecoder =
+    decode GamePlayer
+        |> required "player" JD.string
+        |> required "game" JD.string
+
+
+ownedPlaceEncoder : OwnedPlace -> Value
+ownedPlaceEncoder place =
+    JE.object
+        [ ( "player", gamePlayerEncoder place.player )
+        , ( "location", encodeLocation place.location )
+        ]
+
+
+ownedPlaceDecoder : Decoder OwnedPlace
+ownedPlaceDecoder =
+    decode OwnedPlace
+        |> required "player" gamePlayerDecoder
+        |> required "location" locationDecoder
+
+
+ownedPlacementEncoder : OwnedPlacement -> Value
+ownedPlacementEncoder place =
+    JE.object
+        [ ( "player", gamePlayerEncoder place.player )
+        , ( "location", encodeLocation place.location )
+        , ( "direction", encodeDirection place.direction )
+        ]
+
+
+ownedPlacementDecoder : Decoder OwnedPlacement
+ownedPlacementDecoder =
+    decode OwnedPlacement
+        |> required "player" gamePlayerDecoder
+        |> required "location" locationDecoder
+        |> required "direction" directionDecoder
+
+
+errorKindEncoder : ErrorKind -> Value
+errorKindEncoder kind =
+    case kind of
+        ValidationFailedError ->
+            JE.object [ ( "ValidationFailedError", JE.null ) ]
+
+        UnknownPlayerIdError playerid ->
+            JE.object [ ( "UnknownPlayerIdError", JE.string playerid ) ]
+
+        UnknownPlayerError player ->
+            JE.object [ ( "UnknownPlayerError", gamePlayerEncoder player ) ]
+
+        IllegalMoveError place ->
+            JE.object [ ( "IllegalMoveError", ownedPlaceEncoder place ) ]
+
+        IllegalWallLocationError placement ->
+            JE.object
+                [ ( "IllegalWallLocationError"
+                  , ownedPlacementEncoder placement
+                  )
+                ]
+
+        UnknownAppearanceError appearanceName ->
+            JE.object [ ( "UnknownAppearanceError", JE.string appearanceName ) ]
+
+        UnknownImageError imageName ->
+            JE.object [ ( "UnknownImageError", JE.string imageName ) ]
+
+
+errorKindDecoder : Decoder ErrorKind
+errorKindDecoder =
+    JD.oneOf
+        [ JD.map (\_ -> ValidationFailedError) <|
+            JD.field "ValidationFailedError" JD.value
+        , JD.map UnknownPlayerIdError <|
+            JD.field "UnknownPlayerIdError" JD.string
+        , JD.map UnknownPlayerError <|
+            JD.field "UnknownPlayerError" gamePlayerDecoder
+        , JD.map IllegalMoveError <|
+            JD.field "IllegalMoveError" ownedPlaceDecoder
+        , JD.map IllegalWallLocationError <|
+            JD.field "IllegalWallLocationError" ownedPlacementDecoder
+        , JD.map UnknownAppearanceError <|
+            JD.field "UnknownAppearanceError" JD.string
+        , JD.map UnknownImageError <|
+            JD.field "UnknownImageError" JD.string
+        ]
+
+
+messageEncoder : Message -> Value
+messageEncoder message =
+    case message of
+        PingReq string ->
+            JE.object [ ( "PingReq", JE.string string ) ]
+
+        PongRsp string ->
+            JE.object [ ( "PongRsp", JE.string string ) ]
+
+        ErrorRsp { error, message } ->
+            JE.object
+                [ ( "ErrorRsp"
+                  , JE.object
+                        [ ( "error", errorKindEncoder error )
+                        , ( "message", JE.string message )
+                        ]
+                  )
+                ]
+
+        _ ->
+            JE.string "TODO"
+
+
+messageDecoder : Decoder Message
+messageDecoder =
+    JD.oneOf
+        [ JD.map PingReq <| JD.field "PingReq" JD.string
+        , JD.map PongRsp <| JD.field "PongRsp" JD.string
+        , JD.map ErrorRsp <|
+            JD.field "ErrorRsp"
+                (decode
+                    (\error message ->
+                        { error = error
+                        , message = message
+                        }
+                    )
+                    |> required "error" errorKindDecoder
+                    |> required "message" JD.string
+                )
         ]

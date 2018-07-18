@@ -13,18 +13,23 @@
 module JSMaze.GameTypes
     exposing
         ( Appearance(..)
+        , ErrorKind(..)
+        , FullPlayer
         , Game
+        , GameDescription
         , GameName
         , GamePlayer
         , Image(..)
         , Message(..)
+        , OwnedPlace
+        , OwnedPlacement
+        , PaintedWall
+        , PaintedWalls
         , PlayerName
         , Point
         , SideImages
         , StaticImages
         , Url
-        , WallImage
-        , WallImages
         )
 
 import Array exposing (Array)
@@ -86,7 +91,7 @@ type alias PlayerName =
     String
 
 
-type alias GamePlayer =
+type alias FullPlayer =
     { name : PlayerName
     , appearance : Appearance
     , location : Location
@@ -94,14 +99,16 @@ type alias GamePlayer =
     }
 
 
-type alias WallImage =
+type alias PaintedWall =
     { owner : PlayerName
+    , location : Location
+    , direction : Direction
     , image : Image
     }
 
 
-type alias WallImages =
-    List ( Direction, WallImage )
+type alias PaintedWalls =
+    List PaintedWall
 
 
 type alias GameName =
@@ -113,9 +120,9 @@ type alias Game =
     , description : String
     , owner : PlayerName
     , board : Board
-    , playerDict : Dict PlayerName GamePlayer
+    , playerDict : Dict PlayerName FullPlayer
     , playerNamesDict : Dict Location (List PlayerName)
-    , wallDict : Dict Location WallImages
+    , wallsDict : Dict Location PaintedWalls
     }
 
 
@@ -123,6 +130,12 @@ type alias GameDescription =
     { name : GameName
     , description : String
     , owner : PlayerName
+    }
+
+
+type alias GamePlayer =
+    { player : PlayerName
+    , game : GameName
     }
 
 
@@ -140,8 +153,8 @@ type alias Account =
 
     -- These are stored under "<hash salt email>.currentGame"
     -- and ".allGames" -> List Int, and .game.<int> -> Player.
-    , currentGame : Player
-    , allGames : List Player
+    , currentGame : GamePlayer
+    , allGames : List GamePlayer
     }
 
 
@@ -149,29 +162,27 @@ type alias Account =
 {---- The wire protocol ----}
 
 
+type alias OwnedPlace =
+    { player : GamePlayer
+    , location : Location
+    }
+
+
+type alias OwnedPlacement =
+    { player : GamePlayer
+    , location : Location
+    , direction : Direction
+    }
+
+
 type ErrorKind
     = ValidationFailedError
     | UnknownPlayerIdError PlayerId
-    | UnknownPlayerError
-        { player : Player
-        }
-    | IllegalMoveError
-        { player : Player
-        , location : Location
-        }
-    | IllegalWallLocationError
-        { player : Player
-        , location : Location
-        , direction : Direction
-        }
-    | UnknownAppearanceError { name : String }
-    | UnknownImageError { name : String }
-
-
-type alias Player =
-    { player : PlayerName
-    , game : GameName
-    }
+    | UnknownPlayerError GamePlayer
+    | IllegalMoveError OwnedPlace
+    | IllegalWallLocationError OwnedPlacement
+    | UnknownAppearanceError String
+    | UnknownImageError String
 
 
 type
@@ -192,18 +203,18 @@ type
     | LoginRsp
         { playerid : PlayerId
         , currentGame : String
-        , allGames : List Player
+        , allGames : List GamePlayer
         }
       -- Logout of the current session. Do NOT exit any games.
     | LogoutReq { playerid : PlayerId }
       -- Sent to everybody, so they all know these players are now inactive.
-    | LogoutRsp { players : List Player }
+    | LogoutRsp { players : List GamePlayer }
       -- Join an existing game as the given player.
       -- Can be either a brand new player, or a player already associated
       -- with this login and the given GameName.
     | JoinGameReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         }
       -- Create a brand new game, with a brand new GameName.
       -- The game is initially private, meaning you have to know its name
@@ -223,53 +234,53 @@ type
       -- Otherwise, the joiner will get a JoinGameNotificationRsp, like
       -- everybody else.
     | JoinGameRsp
-        { player : Player
+        { player : GamePlayer
         , game : Game
         }
       -- Sent to all existing members of the game when someone joins.
     | JoinGameNotificationRsp
-        { player : Player
+        { player : GamePlayer
         , location : Location
         , direction : Direction
         }
       -- Sent to become idle, but not exit from a game.
     | LeaveReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         }
       -- Sent to all members of the game when a player leaves.
-    | LeaveRsp { player : Player }
+    | LeaveRsp { player : GamePlayer }
       -- Exit from a game and disown all of your wall images.
     | ExitReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         }
       -- Sent to all members of a game when a player exits.
-    | ExitRsp { player : Player }
+    | ExitRsp { player : GamePlayer }
       -- Move location and/or change direction.
       -- It will usually be illegal to move more than one square or through a wall.
       -- This may be allowed by some future God mode.
     | MoveReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         , location : Maybe Location
         , direction : Maybe Direction
         }
       -- Sent to all members of a game after a player moves.
     | MoveRsp
-        { player : Player
+        { player : GamePlayer
         , location : Location
         , direction : Direction
         }
       -- Change your appearance.
     | SetApearanceReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         , appearance : Appearance
         }
       -- Sent to all members of a game when a player changes his appearance.
     | SetAppearanceRsp
-        { player : Player
+        { player : GamePlayer
         , appearance : Appearance
         }
       -- Paint a wall, or change the painting if the existing painting is
@@ -277,22 +288,22 @@ type
       -- If `Nothing` is sent for the `image`, unpaints.
     | PaintWallReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         , location : Location
         , direction : Direction
-        , image : Maybe WallImage
+        , image : Maybe Image
         }
       -- Sent to all members when a member paints/unpaints a wall.
     | PaintWallRsp
-        { player : Player
+        { player : GamePlayer
         , location : Location
         , direction : Direction
-        , image : Maybe WallImage
+        , image : Maybe Image
         }
       -- Make a game that you own public.
     | ListGameReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         }
       -- Make a game that you own no longer public.
       -- Optionally switch its ownership.
@@ -306,7 +317,7 @@ type
         }
       -- Sent to all members when a game is listed or unlisted.
     | ListGameRsp
-        { player : Player
+        { player : GamePlayer
         , isListed : Bool
         }
       -- Request a list of public games.
@@ -316,12 +327,12 @@ type
       -- Send a chat message to a game.
     | ChatReq
         { playerid : PlayerId
-        , player : Player
+        , player : GamePlayer
         , message : String
         }
       -- Receive that chat message.
     | ChatRsp
-        { player : Player
+        { player : GamePlayer
         , message : String
         }
       -- Save an appearance for lookup by ListAppearancesReq or GetAppearanceReq

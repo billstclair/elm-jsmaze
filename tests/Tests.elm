@@ -12,10 +12,34 @@ import JSMaze.EncodeDecode as ED
     exposing
         ( decodeBoard
         , encodeBoard
+        , messageDecoder
+        , messageEncoder
         , stringToValue
         , valueToString
         )
-import JSMaze.SharedTypes exposing (Board)
+import JSMaze.GameTypes
+    exposing
+        ( Appearance(..)
+        , ErrorKind(..)
+        , FullPlayer
+        , Game
+        , GameDescription
+        , GameName
+        , GamePlayer
+        , Image(..)
+        , Message(..)
+        , OwnedPlace
+        , OwnedPlacement
+        , PaintedWall
+        , PaintedWalls
+        , PlayerName
+        , Point
+        , SideImages
+        , StaticImages
+        , Url
+        )
+import JSMaze.SharedTypes exposing (Board, Direction(..), Location)
+import Json.Decode as JD
 import Test exposing (..)
 
 
@@ -31,6 +55,7 @@ all =
             [ List.map doTest stringData
             , List.map doTest stringListData
             , List.map doTest boardResultData
+            , List.map doMessageTest messageData
             ]
 
 
@@ -102,7 +127,7 @@ stringData =
 stringListData : List ( String, List String, List String )
 stringListData =
     [ ( "stringsToBoard"
-      , simpleBoardSpec |> stringsToBoard |> boardToStrings
+      , simpleBoardSpec |> stringsToBoard "b" |> boardToStrings
       , simpleBoardSpec
       )
     ]
@@ -115,5 +140,78 @@ boardResultData =
     [ ( "encodeBoard"
       , simpleBoard |> encodeBoard |> decodeBoard
       , Ok simpleBoard
+      )
+    ]
+
+
+doMessageTest : ( String, Message ) -> Test
+doMessageTest ( name, message ) =
+    test name
+        (\_ ->
+            let
+                value =
+                    messageEncoder message
+
+                res =
+                    JD.decodeValue messageDecoder value
+            in
+            expectResult (Ok message) res
+        )
+
+
+messageData : List ( String, Message )
+messageData =
+    [ ( "PingReq", PingReq "foo" )
+    , ( "PongRsp", PongRsp "bar" )
+    , ( "UnknownPlayerIdError"
+      , ErrorRsp
+            { error = UnknownPlayerIdError "foo"
+            , message = "No such player id"
+            }
+      )
+    , ( "UnknownPlayerError"
+      , ErrorRsp
+            { error = UnknownPlayerError { player = "Bob", game = "Zooland" }
+            , message = "Ain't nobody named Bob in Zooland"
+            }
+      )
+    , ( "IllegalMoveError"
+      , ErrorRsp
+            { error =
+                IllegalMoveError
+                    { player =
+                        { player = "Joe"
+                        , game = "Zooland"
+                        }
+                    , location = ( 1, 2 )
+                    }
+            , message = "You can't go there, silly."
+            }
+      )
+    , ( "IllegalWallLocationError"
+      , ErrorRsp
+            { error =
+                IllegalWallLocationError
+                    { player =
+                        { player = "Joe"
+                        , game = "Zooland"
+                        }
+                    , location = ( 1, 2 )
+                    , direction = North
+                    }
+            , message = "bar"
+            }
+      )
+    , ( "UnknownAppearanceError"
+      , ErrorRsp
+            { error = UnknownAppearanceError "foo"
+            , message = "No such saved appearance"
+            }
+      )
+    , ( "UnknownImageError"
+      , ErrorRsp
+            { error = UnknownImageError "bar"
+            , message = "No such saved image"
+            }
       )
     ]

@@ -10,16 +10,18 @@
 ----------------------------------------------------------------------
 
 
-module GameTypes
+module JSMaze.GameTypes
     exposing
         ( Appearance(..)
         , Game
         , GameName
         , GamePlayer
         , Image(..)
+        , Message(..)
         , PlayerName
         , Point
         , SideImages
+        , StaticImages
         , Url
         , WallImage
         , WallImages
@@ -65,15 +67,18 @@ type alias SideImages =
     }
 
 
+type alias StaticImages =
+    { front : Image
+    , back : Image
+    , left : Image
+    , right : Image
+    }
+
+
 type Appearance
     = InvisibleAppearance
     | DefaultAppearance
-    | StaticImageApearance
-        { front : Image
-        , back : Image
-        , left : Image
-        , right : Image
-        }
+    | StaticImageAppearance StaticImages
     | VaryingAppearance SideImages
 
 
@@ -100,7 +105,7 @@ type alias WallImages =
 
 
 type alias GameName =
-    String
+    GameId
 
 
 type alias Game =
@@ -203,6 +208,13 @@ type
       -- Create a brand new game, with a brand new GameName.
       -- The game is initially private, meaning you have to know its name
       -- to join it.
+      --
+      -- It would be nice to be able to rename a game, but I'm going to
+      -- wait to see how much database effort that will take before
+      -- promising it.
+      -- I suppose I could have an internal, random GameId, mapped to and
+      -- from the user name.
+      -- Or maybe the game names shouldn't need to be unique, only their IDs.
     | NewGameReq
         { playerid : PlayerId
         , game : Game

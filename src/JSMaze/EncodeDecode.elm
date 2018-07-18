@@ -25,6 +25,22 @@ module JSMaze.EncodeDecode
         )
 
 import JSMaze.Board exposing (boardToStrings, setId, stringsToBoard)
+import JSMaze.GameTypes
+    exposing
+        ( Appearance(..)
+        , Game
+        , GameName
+        , GamePlayer
+        , Image(..)
+        , Message(..)
+        , PlayerName
+        , Point
+        , SideImages
+        , StaticImages
+        , Url
+        , WallImage
+        , WallImages
+        )
 import JSMaze.SharedTypes
     exposing
         ( Board
@@ -38,8 +54,23 @@ import JSMaze.SharedTypes
         , directionToString
         , stringToDirection
         )
-import Json.Decode as JD
+import Json.Decode as JD exposing (Decoder)
+import Json.Decode.Pipeline exposing (decode, hardcoded, optional, required)
 import Json.Encode as JE exposing (Value)
+import WebSocketFramework exposing (decodePlist, unknownMessage)
+import WebSocketFramework.EncodeDecode exposing (genericMessageDecoder)
+import WebSocketFramework.ServerInterface as ServerInterface
+import WebSocketFramework.Types
+    exposing
+        ( DecoderPlist
+        , GameId
+        , MessageDecoder
+        , MessageEncoder
+        , Plist
+        , PublicGame
+        , ReqRsp(..)
+        , ServerUrl
+        )
 
 
 valueToString : Value -> String
@@ -84,7 +115,7 @@ stringToLayout string =
             NormalLayout
 
 
-layoutDecoder : JD.Decoder Layout
+layoutDecoder : Decoder Layout
 layoutDecoder =
     JD.map stringToLayout JD.string
 
@@ -96,7 +127,7 @@ encodeModel model =
         ]
 
 
-modelDecoder : JD.Decoder SavedModel
+modelDecoder : Decoder SavedModel
 modelDecoder =
     JD.map SavedModel
         (JD.field "layout" layoutDecoder)
@@ -122,14 +153,14 @@ encodeBoardSpec board =
         |> JE.list
 
 
-boardSpecDecoder : JD.Decoder Board
+boardSpecDecoder : Decoder Board
 boardSpecDecoder =
     JD.list
         JD.string
         |> JD.map (stringsToBoard "")
 
 
-boardDecoder : JD.Decoder Board
+boardDecoder : Decoder Board
 boardDecoder =
     JD.map2 setId
         (JD.field "id" JD.string)
@@ -154,7 +185,7 @@ encodeLocation ( x, y ) =
         ]
 
 
-locationDecoder : JD.Decoder Location
+locationDecoder : Decoder Location
 locationDecoder =
     JD.map2 (,)
         (JD.field "x" JD.int)
@@ -166,7 +197,7 @@ encodeDirection direction =
     JE.string <| directionToString direction
 
 
-directionDecoder : JD.Decoder Direction
+directionDecoder : Decoder Direction
 directionDecoder =
     JD.string
         |> JD.andThen
@@ -191,7 +222,7 @@ encodePlayer player =
         ]
 
 
-playerDecoder : JD.Decoder Player
+playerDecoder : Decoder Player
 playerDecoder =
     JD.map5 Player
         (JD.field "id" JD.string)
@@ -204,3 +235,128 @@ playerDecoder =
 decodePlayer : Value -> Result String Player
 decodePlayer value =
     JD.decodeValue playerDecoder value
+
+
+
+{---- Message coding ----}
+
+
+pointEncoder : Point -> Value
+pointEncoder ( x, y ) =
+    JE.list [ JE.float x, JE.float y ]
+
+
+pointDecoder : Decoder Point
+pointDecoder =
+    JD.list JD.float
+        |> JD.andThen
+            (\p ->
+                case p of
+                    [ x, y ] ->
+                        JD.succeed ( x, y )
+
+                    _ ->
+                        JD.fail "Malformed point"
+            )
+
+
+imageEncoder : Image -> Value
+imageEncoder image =
+    case image of
+        UrlImage url ->
+            JE.object
+                [ ( "UrlImage", JE.string url )
+                ]
+
+        VectorImage pointLists ->
+            JE.object
+                [ ( "VectorImage"
+                  , JE.list
+                        (List.map
+                            (\points ->
+                                JE.list <|
+                                    List.map pointEncoder points
+                            )
+                            pointLists
+                        )
+                  )
+                ]
+
+
+imageDecoder : Decoder Image
+imageDecoder =
+    JD.oneOf
+        [ JD.map UrlImage <|
+            JD.field "UrlImage" JD.string
+        , JD.map VectorImage <|
+            JD.field "VectorImage" (JD.list (JD.list pointDecoder))
+        ]
+
+
+sideImagesEncoder : SideImages -> Value
+sideImagesEncoder images =
+    JE.object
+        [ ( "front", JE.list <| List.map imageEncoder images.front )
+        , ( "back", JE.list <| List.map imageEncoder images.back )
+        , ( "left", JE.list <| List.map imageEncoder images.left )
+        , ( "right", JE.list <| List.map imageEncoder images.right )
+        ]
+
+
+sideImagesDecoder : Decoder SideImages
+sideImagesDecoder =
+    decode SideImages
+        |> required "front" (JD.list imageDecoder)
+        |> required "back" (JD.list imageDecoder)
+        |> required "left" (JD.list imageDecoder)
+        |> required "right" (JD.list imageDecoder)
+
+
+staticImagesEncoder : StaticImages -> Value
+staticImagesEncoder { front, back, left, right } =
+    JE.object
+        [ ( "front", imageEncoder front )
+        , ( "back", imageEncoder back )
+        , ( "left", imageEncoder left )
+        , ( "right", imageEncoder right )
+        ]
+
+
+staticImagesDecoder : Decoder StaticImages
+staticImagesDecoder =
+    decode StaticImages
+        |> required "front" imageDecoder
+        |> required "back" imageDecoder
+        |> required "left" imageDecoder
+        |> required "right" imageDecoder
+
+
+appearanceEncoder : Appearance -> Value
+appearanceEncoder appearance =
+    case appearance of
+        InvisibleAppearance ->
+            JE.object [ ( "InvisibleAppearance", JE.null ) ]
+
+        DefaultAppearance ->
+            JE.object [ ( "DefaultAppearance", JE.null ) ]
+
+        StaticImageAppearance staticImages ->
+            JE.object
+                [ ( "StaticImageAppearance", staticImagesEncoder staticImages ) ]
+
+        VaryingAppearance sideImages ->
+            JE.object [ ( "VaryingAppearance", sideImagesEncoder sideImages ) ]
+
+
+appearanceDecoder : Decoder Appearance
+appearanceDecoder =
+    JD.oneOf
+        [ JD.map (\_ -> InvisibleAppearance) <|
+            JD.field "InvisibleAppearance" JD.value
+        , JD.map (\_ -> DefaultAppearance) <|
+            JD.field "DefaultAppearance" JD.value
+        , JD.map StaticImageAppearance <|
+            JD.field "StaticImageAppearance" staticImagesDecoder
+        , JD.map VaryingAppearance <|
+            JD.field "VaryingAppearance" sideImagesDecoder
+        ]

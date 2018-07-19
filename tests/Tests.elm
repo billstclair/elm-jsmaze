@@ -1,5 +1,6 @@
 module Tests exposing (all)
 
+import Dict exposing (Dict)
 import Expect exposing (Expectation)
 import JSMaze.Board as Board
     exposing
@@ -214,4 +215,169 @@ messageData =
             , message = "No such saved image"
             }
       )
+    , ( "LoginWithPasswordReq"
+      , LoginWithPasswordReq
+            { email = "nobody@nowhere.com"
+            , passwordHash = "what, me worry?"
+            }
+      )
+    , ( "LoginRsp"
+      , LoginRsp
+            { playerid = "player"
+            , currentGame = "game"
+            , allGames =
+                [ { player = "player", game = "game" }
+                , { player = "player2", game = "game2" }
+                ]
+            }
+      )
+    , ( "LogoutReq"
+      , LogoutReq
+            { playerid = "player" }
+      )
+    , ( "LogoutRsp"
+      , LogoutRsp
+            { players =
+                [ { player = "player", game = "game" }
+                , { player = "player2", game = "game2" }
+                ]
+            }
+      )
+    , ( "JoinGameReq"
+      , JoinGameReq
+            { playerid = "player"
+            , player = { player = "player", game = "game" }
+            }
+      )
+    , ( "NewGameReq"
+      , NewGameReq
+            { playerid = "player"
+            , game =
+                { name = "Bill's Maze"
+                , description = "Just a little maze."
+                , owner = "Bill"
+                , board = simpleBoard
+                , playerDict =
+                    Dict.fromList
+                        [ ( "Bill", player1 )
+                        , ( "Moe", player2 )
+                        , ( "Larry", player3 )
+                        , ( "Curly", player4 )
+                        ]
+                , playerNamesDict =
+                    Dict.fromList
+                        -- The lists must be in alphabetical order here,
+                        -- or the test will fail, even though it's logically OK.
+                        [ ( ( 0, 0 ), [ "Bill", "Moe" ] )
+                        , ( ( 1, 2 ), [ "Curly", "Larry" ] )
+                        ]
+                , wallsDict =
+                    Dict.fromList
+                        [ ( ( 0, 0 ), [ wall1 ] )
+                        , ( ( 1, 1 ), [ wall2, wall3 ] )
+                        ]
+                }
+            }
+      )
     ]
+
+
+player1 : FullPlayer
+player1 =
+    { name = "Bill"
+    , appearance = InvisibleAppearance
+    , location = ( 0, 0 )
+    , direction = North
+    }
+
+
+player2 : FullPlayer
+player2 =
+    { name = "Moe"
+    , appearance = DefaultAppearance
+    , location = ( 0, 0 )
+    , direction = South
+    }
+
+
+player3 : FullPlayer
+player3 =
+    { name = "Larry"
+    , appearance =
+        StaticImageAppearance
+            { front = image1
+            , back = image2
+            , left = image3
+            , right = image4
+            }
+    , location = ( 1, 2 )
+    , direction = East
+    }
+
+
+player4 : FullPlayer
+player4 =
+    { name = "Curly"
+    , appearance =
+        VaryingAppearance
+            { front = [ image1 ]
+            , back = [ image1, image2 ]
+            , left = [ image1, image2, image3 ]
+            , right = [ image1, image2, image3, image4 ]
+            }
+    , location = ( 1, 2 )
+    , direction = East
+    }
+
+
+image1 : Image
+image1 =
+    UrlImage "front.jpg"
+
+
+image2 : Image
+image2 =
+    UrlImage "back.jpg"
+
+
+image3 : Image
+image3 =
+    VectorImage
+        [ [ ( 0, 0 ), ( 0, 1 ) ]
+        , [ ( 1, 1 ), ( 1, 0 ), ( 0, 1 ) ]
+        ]
+
+
+image4 : Image
+image4 =
+    VectorImage
+        [ [ ( 1, 1 ), ( 1, 0 ), ( 0, 1 ) ]
+        , [ ( 0, 0 ), ( 0, 1 ) ]
+        ]
+
+
+wall1 : PaintedWall
+wall1 =
+    { owner = "Bill"
+    , location = ( 0, 0 )
+    , direction = West
+    , image = image1
+    }
+
+
+wall2 : PaintedWall
+wall2 =
+    { owner = "Moe"
+    , location = ( 1, 1 )
+    , direction = East
+    , image = image3
+    }
+
+
+wall3 : PaintedWall
+wall3 =
+    { owner = "Larry"
+    , location = ( 1, 1 )
+    , direction = West
+    , image = image4
+    }

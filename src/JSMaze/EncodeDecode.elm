@@ -438,7 +438,7 @@ makeGame : String -> String -> String -> Board -> List FullPlayer -> List Painte
 makeGame name description owner board players walls =
     let
         playerNamesDict =
-            List.foldl
+            List.foldr
                 (\player dict ->
                     Dict.insert player.location
                         (case Dict.get player.location dict of
@@ -454,7 +454,7 @@ makeGame name description owner board players walls =
                 players
 
         wallsDict =
-            List.foldl
+            List.foldr
                 (\wall dict ->
                     Dict.insert wall.location
                         (case Dict.get wall.location dict of
@@ -624,6 +624,68 @@ messageEncoder message =
                   )
                 ]
 
+        LoginWithPasswordReq { email, passwordHash } ->
+            JE.object
+                [ ( "LoginWithPasswordReq"
+                  , JE.object
+                        [ ( "email", JE.string email )
+                        , ( "passwordHash", JE.string passwordHash )
+                        ]
+                  )
+                ]
+
+        LoginRsp { playerid, currentGame, allGames } ->
+            JE.object
+                [ ( "LoginRsp"
+                  , JE.object
+                        [ ( "playerid", JE.string playerid )
+                        , ( "currentGame", JE.string currentGame )
+                        , ( "allGames"
+                          , JE.list (List.map gamePlayerEncoder allGames)
+                          )
+                        ]
+                  )
+                ]
+
+        LogoutReq { playerid } ->
+            JE.object
+                [ ( "LogoutReq"
+                  , JE.object
+                        [ ( "playerid", JE.string playerid ) ]
+                  )
+                ]
+
+        LogoutRsp { players } ->
+            JE.object
+                [ ( "LogoutRsp"
+                  , JE.object
+                        [ ( "players"
+                          , JE.list (List.map gamePlayerEncoder players)
+                          )
+                        ]
+                  )
+                ]
+
+        JoinGameReq { playerid, player } ->
+            JE.object
+                [ ( "JoinGameReq"
+                  , JE.object
+                        [ ( "playerid", JE.string playerid )
+                        , ( "player", gamePlayerEncoder player )
+                        ]
+                  )
+                ]
+
+        NewGameReq { playerid, game } ->
+            JE.object
+                [ ( "NewGameReq"
+                  , JE.object
+                        [ ( "playerid", JE.string playerid )
+                        , ( "game", gameEncoder game )
+                        ]
+                  )
+                ]
+
         _ ->
             JE.string "TODO"
 
@@ -643,5 +705,67 @@ messageDecoder =
                     )
                     |> required "error" errorKindDecoder
                     |> required "message" JD.string
+                )
+        , JD.map LoginWithPasswordReq <|
+            JD.field "LoginWithPasswordReq"
+                (decode
+                    (\email passwordHash ->
+                        { email = email
+                        , passwordHash = passwordHash
+                        }
+                    )
+                    |> required "email" JD.string
+                    |> required "passwordHash" JD.string
+                )
+        , JD.map LoginRsp <|
+            JD.field "LoginRsp"
+                (decode
+                    (\playerid currentGame allGames ->
+                        { playerid = playerid
+                        , currentGame = currentGame
+                        , allGames = allGames
+                        }
+                    )
+                    |> required "playerid" JD.string
+                    |> required "currentGame" JD.string
+                    |> required "allGames" (JD.list gamePlayerDecoder)
+                )
+        , JD.map LogoutReq <|
+            JD.field "LogoutReq"
+                (decode
+                    (\playerid ->
+                        { playerid = playerid }
+                    )
+                    |> required "playerid" JD.string
+                )
+        , JD.map LogoutRsp <|
+            JD.field "LogoutRsp"
+                (decode
+                    (\players ->
+                        { players = players }
+                    )
+                    |> required "players" (JD.list gamePlayerDecoder)
+                )
+        , JD.map JoinGameReq <|
+            JD.field "JoinGameReq"
+                (decode
+                    (\playerid player ->
+                        { playerid = playerid
+                        , player = player
+                        }
+                    )
+                    |> required "playerid" JD.string
+                    |> required "player" gamePlayerDecoder
+                )
+        , JD.map NewGameReq <|
+            JD.field "NewGameReq"
+                (decode
+                    (\playerid game ->
+                        { playerid = playerid
+                        , game = game
+                        }
+                    )
+                    |> required "playerid" JD.string
+                    |> required "game" gameDecoder
                 )
         ]

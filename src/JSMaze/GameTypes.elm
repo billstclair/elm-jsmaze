@@ -202,7 +202,7 @@ type
       -- Sent to only the requester
     | LoginRsp
         { playerid : PlayerId
-        , currentGame : String
+        , currentGame : GameName
         , allGames : List GamePlayer
         }
       -- Logout of the current session. Do NOT exit any games.

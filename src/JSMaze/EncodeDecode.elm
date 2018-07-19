@@ -607,7 +607,8 @@ errorKindDecoder =
 
 maybeNull : (a -> Value) -> Maybe a -> Value
 maybeNull encoder ma =
-    Maybe.withDefault JE.null <| Maybe.map encoder ma
+    Maybe.map encoder ma
+        |> Maybe.withDefault JE.null
 
 
 messageEncoder : MessageEncoder Message

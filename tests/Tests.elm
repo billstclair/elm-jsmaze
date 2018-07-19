@@ -238,48 +238,94 @@ protocolData =
         }
     , LogoutReq { playerid = "player" }
     , LogoutRsp
-        { players =
-            [ { player = "player", game = "game" }
-            , { player = "player2", game = "game2" }
-            ]
-        }
+        { players = [ player1, player2 ] }
     , JoinGameReq
         { playerid = "player"
-        , player = { player = "player", game = "game" }
+        , player = player1
         }
     , NewGameReq
         { playerid = "player"
-        , game =
-            { name = "Bill's Maze"
-            , description = "Just a little maze."
-            , owner = "Bill"
-            , board = simpleBoard
-            , playerDict =
-                Dict.fromList
-                    [ ( "Bill", player1 )
-                    , ( "Moe", player2 )
-                    , ( "Larry", player3 )
-                    , ( "Curly", player4 )
-                    ]
-            , playerNamesDict =
-                Dict.fromList
-                    -- The lists must be in alphabetical order here,
-                    -- or the test will fail, even though it's logically OK.
-                    [ ( ( 0, 0 ), [ "Bill", "Moe" ] )
-                    , ( ( 1, 2 ), [ "Curly", "Larry" ] )
-                    ]
-            , wallsDict =
-                Dict.fromList
-                    [ ( ( 0, 0 ), [ wall1 ] )
-                    , ( ( 1, 1 ), [ wall2, wall3 ] )
-                    ]
-            }
+        , game = game1
+        }
+    , JoinGameRsp
+        { player = player1
+        , game = game1
+        }
+    , JoinGameNotificationRsp
+        { player = player1
+        , location = ( 0, 0 )
+        , direction = South
+        }
+    , LeaveReq
+        { playerid = "player"
+        , player = player1
+        }
+    , LeaveRsp { player = player1 }
+    , ExitReq
+        { playerid = "player"
+        , player = player1
+        }
+    , ExitRsp { player = player1 }
+    , MoveReq
+        { playerid = "player"
+        , player = player1
+        , location = Just ( 1, 2 )
+        , direction = Just North
+        }
+    , MoveReq
+        { playerid = "player"
+        , player = player2
+        , location = Nothing
+        , direction = Nothing
+        }
+    , MoveRsp
+        { player = player2
+        , location = ( 1, 2 )
+        , direction = North
         }
     ]
 
 
-player1 : FullPlayer
+player1 : GamePlayer
 player1 =
+    { player = "player", game = "game" }
+
+
+player2 : GamePlayer
+player2 =
+    { player = "player2", game = "game2" }
+
+
+game1 : Game
+game1 =
+    { name = "Bill's Maze"
+    , description = "Just a little maze."
+    , owner = "Bill"
+    , board = simpleBoard
+    , playerDict =
+        Dict.fromList
+            [ ( "Bill", fullPlayer1 )
+            , ( "Moe", fullPlayer2 )
+            , ( "Larry", fullPlayer3 )
+            , ( "Curly", fullPlayer4 )
+            ]
+    , playerNamesDict =
+        Dict.fromList
+            -- The lists must be in alphabetical order here,
+            -- or the test will fail, even though it's logically OK.
+            [ ( ( 0, 0 ), [ "Bill", "Moe" ] )
+            , ( ( 1, 2 ), [ "Curly", "Larry" ] )
+            ]
+    , wallsDict =
+        Dict.fromList
+            [ ( ( 0, 0 ), [ wall1 ] )
+            , ( ( 1, 1 ), [ wall2, wall3 ] )
+            ]
+    }
+
+
+fullPlayer1 : FullPlayer
+fullPlayer1 =
     { name = "Bill"
     , appearance = InvisibleAppearance
     , location = ( 0, 0 )
@@ -287,8 +333,8 @@ player1 =
     }
 
 
-player2 : FullPlayer
-player2 =
+fullPlayer2 : FullPlayer
+fullPlayer2 =
     { name = "Moe"
     , appearance = DefaultAppearance
     , location = ( 0, 0 )
@@ -296,8 +342,8 @@ player2 =
     }
 
 
-player3 : FullPlayer
-player3 =
+fullPlayer3 : FullPlayer
+fullPlayer3 =
     { name = "Larry"
     , appearance =
         StaticImageAppearance
@@ -311,8 +357,8 @@ player3 =
     }
 
 
-player4 : FullPlayer
-player4 =
+fullPlayer4 : FullPlayer
+fullPlayer4 =
     { name = "Curly"
     , appearance =
         VaryingAppearance

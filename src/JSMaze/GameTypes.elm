@@ -219,13 +219,15 @@ type
       -- Create a brand new game, with a brand new GameName.
       -- The game is initially private, meaning you have to know its name
       -- to join it.
+      -- The game.owner will be auto-joined, so the response will be
+      -- a JoinGameNotificationRsp, not a JoinGameRsp.
       --
       -- It would be nice to be able to rename a game, but I'm going to
       -- wait to see how much database effort that will take before
       -- promising it.
       -- I suppose I could have an internal, random GameId, mapped to and
       -- from the user name.
-      -- Or maybe the game names shouldn't need to be unique, only their IDs.
+      -- Then the game names wouldn't need to be unique, only their IDs.
     | NewGameReq
         { playerid : PlayerId
         , game : Game

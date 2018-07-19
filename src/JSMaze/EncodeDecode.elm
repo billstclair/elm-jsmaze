@@ -605,6 +605,16 @@ errorKindDecoder =
         ]
 
 
+maybeNull : (a -> Value) -> Maybe a -> Value
+maybeNull encoder ma =
+    case ma of
+        Nothing ->
+            JE.null
+
+        Just a ->
+            encoder a
+
+
 messageEncoder : MessageEncoder Message
 messageEncoder message =
     case message of
@@ -669,6 +679,62 @@ messageEncoder message =
               ]
             )
 
+        JoinGameRsp { player, game } ->
+            ( Rsp "joinGame"
+            , [ ( "player", gamePlayerEncoder player )
+              , ( "game", gameEncoder game )
+              ]
+            )
+
+        JoinGameNotificationRsp { player, location, direction } ->
+            ( Rsp "joinGameNotification"
+            , [ ( "player", gamePlayerEncoder player )
+              , ( "location", encodeLocation location )
+              , ( "direction", encodeDirection direction )
+              ]
+            )
+
+        LeaveReq { playerid, player } ->
+            ( Req "leave"
+            , [ ( "playerid", JE.string playerid )
+              , ( "player", gamePlayerEncoder player )
+              ]
+            )
+
+        LeaveRsp { player } ->
+            ( Rsp "leave"
+            , [ ( "player", gamePlayerEncoder player ) ]
+            )
+
+        ExitReq { playerid, player } ->
+            ( Req "exit"
+            , [ ( "playerid", JE.string playerid )
+              , ( "player", gamePlayerEncoder player )
+              ]
+            )
+
+        ExitRsp { player } ->
+            ( Rsp "exit"
+            , [ ( "player", gamePlayerEncoder player ) ]
+            )
+
+        MoveReq { playerid, player, location, direction } ->
+            ( Req "move"
+            , [ ( "playerid", JE.string playerid )
+              , ( "player", gamePlayerEncoder player )
+              , ( "location", maybeNull encodeLocation location )
+              , ( "direction", maybeNull encodeDirection direction )
+              ]
+            )
+
+        MoveRsp { player, location, direction } ->
+            ( Rsp "move"
+            , [ ( "player", gamePlayerEncoder player )
+              , ( "location", encodeLocation location )
+              , ( "direction", encodeDirection direction )
+              ]
+            )
+
         _ ->
             ( Req "todo"
             , []
@@ -687,7 +753,28 @@ reqPlist =
     , ( "logout", logoutReqDecoder )
     , ( "joinGame", joinGameReqDecoder )
     , ( "newGame", newGameReqDecoder )
+    , ( "leave", leaveReqDecoder )
+    , ( "exit", exitReqDecoder )
+    , ( "move", moveReqDecoder )
     ]
+
+
+rspPlist : DecoderPlist Message
+rspPlist =
+    [ ( "pong", pongRspDecoder )
+    , ( "error", errorRspDecoder )
+    , ( "login", loginRspDecoder )
+    , ( "logout", logoutRspDecoder )
+    , ( "joinGame", joinGameRspDecoder )
+    , ( "joinGameNotification", joinGameNotificationRspDecoder )
+    , ( "leave", leaveRspDecoder )
+    , ( "exit", exitRspDecoder )
+    , ( "move", moveRspDecoder )
+    ]
+
+
+
+{---- Req decoders ----}
 
 
 pingReqDecoder : Decoder Message
@@ -744,13 +831,51 @@ newGameReqDecoder =
         |> required "game" gameDecoder
 
 
-rspPlist : DecoderPlist Message
-rspPlist =
-    [ ( "pong", pongRspDecoder )
-    , ( "error", errorRspDecoder )
-    , ( "login", loginRspDecoder )
-    , ( "logout", logoutRspDecoder )
-    ]
+leaveReqDecoder : Decoder Message
+leaveReqDecoder =
+    decode
+        (\playerid player ->
+            LeaveReq
+                { playerid = playerid
+                , player = player
+                }
+        )
+        |> required "playerid" JD.string
+        |> required "player" gamePlayerDecoder
+
+
+exitReqDecoder : Decoder Message
+exitReqDecoder =
+    decode
+        (\playerid player ->
+            ExitReq
+                { playerid = playerid
+                , player = player
+                }
+        )
+        |> required "playerid" JD.string
+        |> required "player" gamePlayerDecoder
+
+
+moveReqDecoder : Decoder Message
+moveReqDecoder =
+    decode
+        (\playerid player location direction ->
+            MoveReq
+                { playerid = playerid
+                , player = player
+                , location = location
+                , direction = direction
+                }
+        )
+        |> required "playerid" JD.string
+        |> required "player" gamePlayerDecoder
+        |> required "location" (JD.nullable locationDecoder)
+        |> required "direction" (JD.nullable directionDecoder)
+
+
+
+{---- Rsp decoders ----}
 
 
 pongRspDecoder : Decoder Message
@@ -794,3 +919,68 @@ logoutRspDecoder =
             LogoutRsp { players = players }
         )
         |> required "players" (JD.list gamePlayerDecoder)
+
+
+joinGameRspDecoder : Decoder Message
+joinGameRspDecoder =
+    decode
+        (\player game ->
+            JoinGameRsp
+                { player = player
+                , game = game
+                }
+        )
+        |> required "player" gamePlayerDecoder
+        |> required "game" gameDecoder
+
+
+joinGameNotificationRspDecoder : Decoder Message
+joinGameNotificationRspDecoder =
+    decode
+        (\player location direction ->
+            JoinGameNotificationRsp
+                { player = player
+                , location = location
+                , direction = direction
+                }
+        )
+        |> required "player" gamePlayerDecoder
+        |> required "location" locationDecoder
+        |> required "direction" directionDecoder
+
+
+leaveRspDecoder : Decoder Message
+leaveRspDecoder =
+    decode
+        (\player ->
+            LeaveRsp
+                { player = player
+                }
+        )
+        |> required "player" gamePlayerDecoder
+
+
+exitRspDecoder : Decoder Message
+exitRspDecoder =
+    decode
+        (\player ->
+            ExitRsp
+                { player = player
+                }
+        )
+        |> required "player" gamePlayerDecoder
+
+
+moveRspDecoder : Decoder Message
+moveRspDecoder =
+    decode
+        (\player location direction ->
+            MoveRsp
+                { player = player
+                , location = location
+                , direction = direction
+                }
+        )
+        |> required "player" gamePlayerDecoder
+        |> required "location" locationDecoder
+        |> required "direction" directionDecoder

@@ -12,16 +12,16 @@
 
 module JSMaze.EncodeDecode
     exposing
-        ( decodeBoard
+        ( boardEncoder
+        , boardSpecEncoder
+        , decodeBoard
         , decodeBoardSpec
         , decodeModel
         , decodePlayer
-        , encodeBoard
-        , encodeBoardSpec
-        , encodeModel
-        , encodePlayer
         , messageDecoder
         , messageEncoder
+        , modelEncoder
+        , playerEncoder
         , stringToValue
         , valueToString
         )
@@ -91,8 +91,8 @@ stringToValue string =
         |> Result.withDefault JE.null
 
 
-encodeLayout : Layout -> Value
-encodeLayout layout =
+layoutEncoder : Layout -> Value
+layoutEncoder layout =
     JE.string <| layoutToString layout
 
 
@@ -127,10 +127,10 @@ layoutDecoder =
     JD.map stringToLayout JD.string
 
 
-encodeModel : Model -> Value
-encodeModel model =
+modelEncoder : Model -> Value
+modelEncoder model =
     JE.object
-        [ ( "layout", encodeLayout model.layout )
+        [ ( "layout", layoutEncoder model.layout )
         ]
 
 
@@ -145,16 +145,16 @@ decodeModel value =
     JD.decodeValue modelDecoder value
 
 
-encodeBoard : Board -> Value
-encodeBoard board =
+boardEncoder : Board -> Value
+boardEncoder board =
     JE.object
         [ ( "id", JE.string board.id )
-        , ( "spec", encodeBoardSpec board )
+        , ( "spec", boardSpecEncoder board )
         ]
 
 
-encodeBoardSpec : Board -> Value
-encodeBoardSpec board =
+boardSpecEncoder : Board -> Value
+boardSpecEncoder board =
     boardToStrings board
         |> List.map JE.string
         |> JE.list
@@ -184,8 +184,8 @@ decodeBoardSpec value =
     JD.decodeValue boardSpecDecoder value
 
 
-encodeLocation : Location -> Value
-encodeLocation ( x, y ) =
+locationEncoder : Location -> Value
+locationEncoder ( x, y ) =
     JE.object
         [ ( "x", JE.int x )
         , ( "y", JE.int y )
@@ -199,8 +199,8 @@ locationDecoder =
         (JD.field "y" JD.int)
 
 
-encodeDirection : Direction -> Value
-encodeDirection direction =
+directionEncoder : Direction -> Value
+directionEncoder direction =
     JE.string <| directionToString direction
 
 
@@ -218,14 +218,14 @@ directionDecoder =
             )
 
 
-encodePlayer : Player -> Value
-encodePlayer player =
+playerEncoder : Player -> Value
+playerEncoder player =
     JE.object
         [ ( "id", JE.string player.id )
         , ( "boardid", JE.string player.boardid )
         , ( "name", JE.string player.name )
-        , ( "location", encodeLocation player.location )
-        , ( "direction", encodeDirection player.direction )
+        , ( "location", locationEncoder player.location )
+        , ( "direction", directionEncoder player.direction )
         ]
 
 
@@ -374,8 +374,8 @@ fullPlayerEncoder player =
     JE.object
         [ ( "name", JE.string player.name )
         , ( "appearance", appearanceEncoder player.appearance )
-        , ( "location", encodeLocation player.location )
-        , ( "direction", encodeDirection player.direction )
+        , ( "location", locationEncoder player.location )
+        , ( "direction", directionEncoder player.direction )
         ]
 
 
@@ -392,8 +392,8 @@ paintedWallEncoder : PaintedWall -> Value
 paintedWallEncoder image =
     JE.object
         [ ( "owner", JE.string image.owner )
-        , ( "location", encodeLocation image.location )
-        , ( "direction", encodeDirection image.direction )
+        , ( "location", locationEncoder image.location )
+        , ( "direction", directionEncoder image.direction )
         , ( "image", imageEncoder image.image )
         ]
 
@@ -418,7 +418,7 @@ gameEncoder game =
         [ ( "name", JE.string game.name )
         , ( "description", JE.string game.description )
         , ( "owner", JE.string game.owner )
-        , ( "board", encodeBoard game.board )
+        , ( "board", boardEncoder game.board )
         , ( "players"
           , JE.list
                 (List.map fullPlayerEncoder <|
@@ -528,7 +528,7 @@ ownedPlaceEncoder : OwnedPlace -> Value
 ownedPlaceEncoder place =
     JE.object
         [ ( "player", gamePlayerEncoder place.player )
-        , ( "location", encodeLocation place.location )
+        , ( "location", locationEncoder place.location )
         ]
 
 
@@ -543,8 +543,8 @@ ownedPlacementEncoder : OwnedPlacement -> Value
 ownedPlacementEncoder place =
     JE.object
         [ ( "player", gamePlayerEncoder place.player )
-        , ( "location", encodeLocation place.location )
-        , ( "direction", encodeDirection place.direction )
+        , ( "location", locationEncoder place.location )
+        , ( "direction", directionEncoder place.direction )
         ]
 
 
@@ -689,8 +689,8 @@ messageEncoder message =
         JoinGameNotificationRsp { player, location, direction } ->
             ( Rsp "joinGameNotification"
             , [ ( "player", gamePlayerEncoder player )
-              , ( "location", encodeLocation location )
-              , ( "direction", encodeDirection direction )
+              , ( "location", locationEncoder location )
+              , ( "direction", directionEncoder direction )
               ]
             )
 
@@ -722,16 +722,16 @@ messageEncoder message =
             ( Req "move"
             , [ ( "playerid", JE.string playerid )
               , ( "player", gamePlayerEncoder player )
-              , ( "location", maybeNull encodeLocation location )
-              , ( "direction", maybeNull encodeDirection direction )
+              , ( "location", maybeNull locationEncoder location )
+              , ( "direction", maybeNull directionEncoder direction )
               ]
             )
 
         MoveRsp { player, location, direction } ->
             ( Rsp "move"
             , [ ( "player", gamePlayerEncoder player )
-              , ( "location", encodeLocation location )
-              , ( "direction", encodeDirection direction )
+              , ( "location", locationEncoder location )
+              , ( "direction", directionEncoder direction )
               ]
             )
 

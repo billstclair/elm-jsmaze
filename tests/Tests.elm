@@ -11,8 +11,8 @@ import JSMaze.Board as Board
         )
 import JSMaze.EncodeDecode as ED
     exposing
-        ( decodeBoard
-        , encodeBoard
+        ( boardEncoder
+        , decodeBoard
         , messageDecoder
         , messageEncoder
         , stringToValue
@@ -152,8 +152,8 @@ stringListData =
 -}
 boardResultData : List ( String, Result String Board, Result String Board )
 boardResultData =
-    [ ( "encodeBoard"
-      , simpleBoard |> encodeBoard |> decodeBoard
+    [ ( "boardEncoder"
+      , simpleBoard |> boardEncoder |> decodeBoard
       , Ok simpleBoard
       )
     ]

@@ -28,12 +28,12 @@ module JSMaze.Persistence
 import JSMaze.Board exposing (simpleBoard)
 import JSMaze.EncodeDecode
     exposing
-        ( decodeBoard
+        ( boardEncoder
+        , decodeBoard
         , decodeModel
         , decodePlayer
-        , encodeBoard
-        , encodeModel
-        , encodePlayer
+        , modelEncoder
+        , playerEncoder
         )
 import JSMaze.SharedTypes
     exposing
@@ -59,7 +59,7 @@ modelKey =
 
 writeModel : Model -> LocalStorage msg -> Cmd msg
 writeModel model storage =
-    encodeModel model
+    modelEncoder model
         |> setItem storage modelKey
 
 
@@ -100,13 +100,13 @@ readThing storage key =
 
 writeBoard : Board -> LocalStorage msg -> Cmd msg
 writeBoard board storage =
-    encodeBoard board
+    boardEncoder board
         |> setItem storage (boardKey board)
 
 
 writePlayer : Player -> LocalStorage msg -> Cmd msg
 writePlayer player storage =
-    encodePlayer player
+    playerEncoder player
         |> setItem storage (playerKey player)
 
 

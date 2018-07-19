@@ -605,167 +605,192 @@ errorKindDecoder =
         ]
 
 
-messageEncoder : Message -> Value
+messageEncoder : MessageEncoder Message
 messageEncoder message =
     case message of
-        PingReq string ->
-            JE.object [ ( "PingReq", JE.string string ) ]
+        PingReq { message } ->
+            ( Req "ping"
+            , [ ( "message", JE.string message ) ]
+            )
 
-        PongRsp string ->
-            JE.object [ ( "PongRsp", JE.string string ) ]
+        PongRsp { message } ->
+            ( Rsp "pong"
+            , [ ( "message", JE.string message ) ]
+            )
 
         ErrorRsp { error, message } ->
-            JE.object
-                [ ( "ErrorRsp"
-                  , JE.object
-                        [ ( "error", errorKindEncoder error )
-                        , ( "message", JE.string message )
-                        ]
-                  )
-                ]
+            ( Rsp "error"
+            , [ ( "error", errorKindEncoder error )
+              , ( "message", JE.string message )
+              ]
+            )
 
         LoginWithPasswordReq { email, passwordHash } ->
-            JE.object
-                [ ( "LoginWithPasswordReq"
-                  , JE.object
-                        [ ( "email", JE.string email )
-                        , ( "passwordHash", JE.string passwordHash )
-                        ]
-                  )
-                ]
+            ( Req "loginWithPassword"
+            , [ ( "email", JE.string email )
+              , ( "passwordHash", JE.string passwordHash )
+              ]
+            )
 
         LoginRsp { playerid, currentGame, allGames } ->
-            JE.object
-                [ ( "LoginRsp"
-                  , JE.object
-                        [ ( "playerid", JE.string playerid )
-                        , ( "currentGame", JE.string currentGame )
-                        , ( "allGames"
-                          , JE.list (List.map gamePlayerEncoder allGames)
-                          )
-                        ]
-                  )
-                ]
+            ( Rsp "login"
+            , [ ( "playerid", JE.string playerid )
+              , ( "currentGame", JE.string currentGame )
+              , ( "allGames"
+                , JE.list (List.map gamePlayerEncoder allGames)
+                )
+              ]
+            )
 
         LogoutReq { playerid } ->
-            JE.object
-                [ ( "LogoutReq"
-                  , JE.object
-                        [ ( "playerid", JE.string playerid ) ]
-                  )
-                ]
+            ( Req "logout"
+            , [ ( "playerid", JE.string playerid ) ]
+            )
 
         LogoutRsp { players } ->
-            JE.object
-                [ ( "LogoutRsp"
-                  , JE.object
-                        [ ( "players"
-                          , JE.list (List.map gamePlayerEncoder players)
-                          )
-                        ]
-                  )
-                ]
+            ( Rsp "logout"
+            , [ ( "players"
+                , JE.list (List.map gamePlayerEncoder players)
+                )
+              ]
+            )
 
         JoinGameReq { playerid, player } ->
-            JE.object
-                [ ( "JoinGameReq"
-                  , JE.object
-                        [ ( "playerid", JE.string playerid )
-                        , ( "player", gamePlayerEncoder player )
-                        ]
-                  )
-                ]
+            ( Req "joinGame"
+            , [ ( "playerid", JE.string playerid )
+              , ( "player", gamePlayerEncoder player )
+              ]
+            )
 
         NewGameReq { playerid, game } ->
-            JE.object
-                [ ( "NewGameReq"
-                  , JE.object
-                        [ ( "playerid", JE.string playerid )
-                        , ( "game", gameEncoder game )
-                        ]
-                  )
-                ]
+            ( Req "newGame"
+            , [ ( "playerid", JE.string playerid )
+              , ( "game", gameEncoder game )
+              ]
+            )
 
         _ ->
-            JE.string "TODO"
+            ( Req "todo"
+            , []
+            )
 
 
-messageDecoder : Decoder Message
-messageDecoder =
-    JD.oneOf
-        [ JD.map PingReq <| JD.field "PingReq" JD.string
-        , JD.map PongRsp <| JD.field "PongRsp" JD.string
-        , JD.map ErrorRsp <|
-            JD.field "ErrorRsp"
-                (decode
-                    (\error message ->
-                        { error = error
-                        , message = message
-                        }
-                    )
-                    |> required "error" errorKindDecoder
-                    |> required "message" JD.string
-                )
-        , JD.map LoginWithPasswordReq <|
-            JD.field "LoginWithPasswordReq"
-                (decode
-                    (\email passwordHash ->
-                        { email = email
-                        , passwordHash = passwordHash
-                        }
-                    )
-                    |> required "email" JD.string
-                    |> required "passwordHash" JD.string
-                )
-        , JD.map LoginRsp <|
-            JD.field "LoginRsp"
-                (decode
-                    (\playerid currentGame allGames ->
-                        { playerid = playerid
-                        , currentGame = currentGame
-                        , allGames = allGames
-                        }
-                    )
-                    |> required "playerid" JD.string
-                    |> required "currentGame" JD.string
-                    |> required "allGames" (JD.list gamePlayerDecoder)
-                )
-        , JD.map LogoutReq <|
-            JD.field "LogoutReq"
-                (decode
-                    (\playerid ->
-                        { playerid = playerid }
-                    )
-                    |> required "playerid" JD.string
-                )
-        , JD.map LogoutRsp <|
-            JD.field "LogoutRsp"
-                (decode
-                    (\players ->
-                        { players = players }
-                    )
-                    |> required "players" (JD.list gamePlayerDecoder)
-                )
-        , JD.map JoinGameReq <|
-            JD.field "JoinGameReq"
-                (decode
-                    (\playerid player ->
-                        { playerid = playerid
-                        , player = player
-                        }
-                    )
-                    |> required "playerid" JD.string
-                    |> required "player" gamePlayerDecoder
-                )
-        , JD.map NewGameReq <|
-            JD.field "NewGameReq"
-                (decode
-                    (\playerid game ->
-                        { playerid = playerid
-                        , game = game
-                        }
-                    )
-                    |> required "playerid" JD.string
-                    |> required "game" gameDecoder
-                )
-        ]
+messageDecoder : MessageDecoder Message
+messageDecoder reqrspAndPlist =
+    genericMessageDecoder reqPlist rspPlist reqrspAndPlist
+
+
+reqPlist : DecoderPlist Message
+reqPlist =
+    [ ( "ping", pingReqDecoder )
+    , ( "loginWithPassword", loginWithPasswordReqDecoder )
+    , ( "logout", logoutReqDecoder )
+    , ( "joinGame", joinGameReqDecoder )
+    , ( "newGame", newGameReqDecoder )
+    ]
+
+
+pingReqDecoder : Decoder Message
+pingReqDecoder =
+    JD.map (\message -> PingReq { message = message })
+        (JD.field "message" JD.string)
+
+
+loginWithPasswordReqDecoder : Decoder Message
+loginWithPasswordReqDecoder =
+    decode
+        (\email passwordHash ->
+            LoginWithPasswordReq
+                { email = email
+                , passwordHash = passwordHash
+                }
+        )
+        |> required "email" JD.string
+        |> required "passwordHash" JD.string
+
+
+logoutReqDecoder : Decoder Message
+logoutReqDecoder =
+    decode
+        (\playerid ->
+            LogoutReq { playerid = playerid }
+        )
+        |> required "playerid" JD.string
+
+
+joinGameReqDecoder : Decoder Message
+joinGameReqDecoder =
+    decode
+        (\playerid player ->
+            JoinGameReq
+                { playerid = playerid
+                , player = player
+                }
+        )
+        |> required "playerid" JD.string
+        |> required "player" gamePlayerDecoder
+
+
+newGameReqDecoder : Decoder Message
+newGameReqDecoder =
+    decode
+        (\playerid game ->
+            NewGameReq
+                { playerid = playerid
+                , game = game
+                }
+        )
+        |> required "playerid" JD.string
+        |> required "game" gameDecoder
+
+
+rspPlist : DecoderPlist Message
+rspPlist =
+    [ ( "pong", pongRspDecoder )
+    , ( "error", errorRspDecoder )
+    , ( "login", loginRspDecoder )
+    , ( "logout", logoutRspDecoder )
+    ]
+
+
+pongRspDecoder : Decoder Message
+pongRspDecoder =
+    JD.map (\message -> PongRsp { message = message })
+        (JD.field "message" JD.string)
+
+
+errorRspDecoder : Decoder Message
+errorRspDecoder =
+    decode
+        (\error message ->
+            ErrorRsp
+                { error = error
+                , message = message
+                }
+        )
+        |> required "error" errorKindDecoder
+        |> required "message" JD.string
+
+
+loginRspDecoder : Decoder Message
+loginRspDecoder =
+    decode
+        (\playerid currentGame allGames ->
+            LoginRsp
+                { playerid = playerid
+                , currentGame = currentGame
+                , allGames = allGames
+                }
+        )
+        |> required "playerid" JD.string
+        |> required "currentGame" JD.string
+        |> required "allGames" (JD.list gamePlayerDecoder)
+
+
+logoutRspDecoder : Decoder Message
+logoutRspDecoder =
+    decode
+        (\players ->
+            LogoutRsp { players = players }
+        )
+        |> required "players" (JD.list gamePlayerDecoder)

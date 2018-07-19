@@ -42,6 +42,11 @@ import JSMaze.GameTypes
 import JSMaze.SharedTypes exposing (Board, Direction(..), Location)
 import Json.Decode as JD
 import Test exposing (..)
+import WebSocketFramework.EncodeDecode
+    exposing
+        ( decodeMessage
+        , encodeMessage
+        )
 
 
 {-| This runs all of your tests.
@@ -56,8 +61,17 @@ all =
             [ List.map doTest stringData
             , List.map doTest stringListData
             , List.map doTest boardResultData
-            , List.map doMessageTest messageData
+            , testMap protocolTest protocolData
             ]
+
+
+testMap : (x -> String -> Test) -> List x -> List Test
+testMap test data =
+    let
+        numbers =
+            List.map toString <| List.range 1 (List.length data)
+    in
+    List.map2 test data numbers
 
 
 log =
@@ -145,140 +159,122 @@ boardResultData =
     ]
 
 
-doMessageTest : ( String, Message ) -> Test
-doMessageTest ( name, message ) =
-    test name
+encode : Message -> String
+encode message =
+    encodeMessage messageEncoder message
+
+
+decode : String -> Result String Message
+decode string =
+    decodeMessage messageDecoder string
+
+
+protocolTest : Message -> String -> Test
+protocolTest message name =
+    test ("protocolTest \"" ++ name ++ "\"")
         (\_ ->
             let
-                value =
-                    messageEncoder message
-
-                res =
-                    JD.decodeValue messageDecoder value
+                json =
+                    maybeLog "protocolJson" <| encode message
             in
-            expectResult (Ok message) res
+            expectResult (Ok message) <| decode json
         )
 
 
-messageData : List ( String, Message )
-messageData =
-    [ ( "PingReq", PingReq "foo" )
-    , ( "PongRsp", PongRsp "bar" )
-    , ( "UnknownPlayerIdError"
-      , ErrorRsp
-            { error = UnknownPlayerIdError "foo"
-            , message = "No such player id"
-            }
-      )
-    , ( "UnknownPlayerError"
-      , ErrorRsp
-            { error = UnknownPlayerError { player = "Bob", game = "Zooland" }
-            , message = "Ain't nobody named Bob in Zooland"
-            }
-      )
-    , ( "IllegalMoveError"
-      , ErrorRsp
-            { error =
-                IllegalMoveError
-                    { player =
-                        { player = "Joe"
-                        , game = "Zooland"
-                        }
-                    , location = ( 1, 2 )
+protocolData : List Message
+protocolData =
+    [ PingReq { message = "foo" }
+    , PongRsp { message = "bar" }
+    , ErrorRsp
+        { error = UnknownPlayerIdError "foo"
+        , message = "No such player id"
+        }
+    , ErrorRsp
+        { error = UnknownPlayerError { player = "Bob", game = "Zooland" }
+        , message = "Ain't nobody named Bob in Zooland"
+        }
+    , ErrorRsp
+        { error =
+            IllegalMoveError
+                { player =
+                    { player = "Joe"
+                    , game = "Zooland"
                     }
-            , message = "You can't go there, silly."
-            }
-      )
-    , ( "IllegalWallLocationError"
-      , ErrorRsp
-            { error =
-                IllegalWallLocationError
-                    { player =
-                        { player = "Joe"
-                        , game = "Zooland"
-                        }
-                    , location = ( 1, 2 )
-                    , direction = North
-                    }
-            , message = "bar"
-            }
-      )
-    , ( "UnknownAppearanceError"
-      , ErrorRsp
-            { error = UnknownAppearanceError "foo"
-            , message = "No such saved appearance"
-            }
-      )
-    , ( "UnknownImageError"
-      , ErrorRsp
-            { error = UnknownImageError "bar"
-            , message = "No such saved image"
-            }
-      )
-    , ( "LoginWithPasswordReq"
-      , LoginWithPasswordReq
-            { email = "nobody@nowhere.com"
-            , passwordHash = "what, me worry?"
-            }
-      )
-    , ( "LoginRsp"
-      , LoginRsp
-            { playerid = "player"
-            , currentGame = "game"
-            , allGames =
-                [ { player = "player", game = "game" }
-                , { player = "player2", game = "game2" }
-                ]
-            }
-      )
-    , ( "LogoutReq"
-      , LogoutReq
-            { playerid = "player" }
-      )
-    , ( "LogoutRsp"
-      , LogoutRsp
-            { players =
-                [ { player = "player", game = "game" }
-                , { player = "player2", game = "game2" }
-                ]
-            }
-      )
-    , ( "JoinGameReq"
-      , JoinGameReq
-            { playerid = "player"
-            , player = { player = "player", game = "game" }
-            }
-      )
-    , ( "NewGameReq"
-      , NewGameReq
-            { playerid = "player"
-            , game =
-                { name = "Bill's Maze"
-                , description = "Just a little maze."
-                , owner = "Bill"
-                , board = simpleBoard
-                , playerDict =
-                    Dict.fromList
-                        [ ( "Bill", player1 )
-                        , ( "Moe", player2 )
-                        , ( "Larry", player3 )
-                        , ( "Curly", player4 )
-                        ]
-                , playerNamesDict =
-                    Dict.fromList
-                        -- The lists must be in alphabetical order here,
-                        -- or the test will fail, even though it's logically OK.
-                        [ ( ( 0, 0 ), [ "Bill", "Moe" ] )
-                        , ( ( 1, 2 ), [ "Curly", "Larry" ] )
-                        ]
-                , wallsDict =
-                    Dict.fromList
-                        [ ( ( 0, 0 ), [ wall1 ] )
-                        , ( ( 1, 1 ), [ wall2, wall3 ] )
-                        ]
+                , location = ( 1, 2 )
                 }
+        , message = "You can't go there, silly."
+        }
+    , ErrorRsp
+        { error =
+            IllegalWallLocationError
+                { player =
+                    { player = "Joe"
+                    , game = "Zooland"
+                    }
+                , location = ( 1, 2 )
+                , direction = North
+                }
+        , message = "bar"
+        }
+    , ErrorRsp
+        { error = UnknownAppearanceError "foo"
+        , message = "No such saved appearance"
+        }
+    , ErrorRsp
+        { error = UnknownImageError "bar"
+        , message = "No such saved image"
+        }
+    , LoginWithPasswordReq
+        { email = "nobody@nowhere.com"
+        , passwordHash = "what, me worry?"
+        }
+    , LoginRsp
+        { playerid = "player"
+        , currentGame = "game"
+        , allGames =
+            [ { player = "player", game = "game" }
+            , { player = "player2", game = "game2" }
+            ]
+        }
+    , LogoutReq { playerid = "player" }
+    , LogoutRsp
+        { players =
+            [ { player = "player", game = "game" }
+            , { player = "player2", game = "game2" }
+            ]
+        }
+    , JoinGameReq
+        { playerid = "player"
+        , player = { player = "player", game = "game" }
+        }
+    , NewGameReq
+        { playerid = "player"
+        , game =
+            { name = "Bill's Maze"
+            , description = "Just a little maze."
+            , owner = "Bill"
+            , board = simpleBoard
+            , playerDict =
+                Dict.fromList
+                    [ ( "Bill", player1 )
+                    , ( "Moe", player2 )
+                    , ( "Larry", player3 )
+                    , ( "Curly", player4 )
+                    ]
+            , playerNamesDict =
+                Dict.fromList
+                    -- The lists must be in alphabetical order here,
+                    -- or the test will fail, even though it's logically OK.
+                    [ ( ( 0, 0 ), [ "Bill", "Moe" ] )
+                    , ( ( 1, 2 ), [ "Curly", "Larry" ] )
+                    ]
+            , wallsDict =
+                Dict.fromList
+                    [ ( ( 0, 0 ), [ wall1 ] )
+                    , ( ( 1, 1 ), [ wall2, wall3 ] )
+                    ]
             }
-      )
+        }
     ]
 
 

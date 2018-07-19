@@ -188,8 +188,8 @@ type ErrorKind
 type
     Message
     -- A request for a pong, just to ensure the server is up.
-    = PingReq String
-    | PongRsp String
+    = PingReq { message : String }
+    | PongRsp { message : String }
       -- Returned when an error occurs
     | ErrorRsp
         { error : ErrorKind

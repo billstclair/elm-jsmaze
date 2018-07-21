@@ -18,9 +18,11 @@ import JSMaze.EncodeDecode as ED
         , stringToValue
         , valueToString
         )
-import JSMaze.GameTypes
+import JSMaze.SharedTypes
     exposing
         ( Appearance(..)
+        , Board
+        , Direction(..)
         , ErrorKind(..)
         , FullPlayer
         , Game
@@ -28,6 +30,7 @@ import JSMaze.GameTypes
         , GameName
         , GamePlayer
         , Image(..)
+        , Location
         , Message(..)
         , OwnedPlace
         , OwnedPlacement
@@ -39,7 +42,6 @@ import JSMaze.GameTypes
         , StaticImages
         , Url
         )
-import JSMaze.SharedTypes exposing (Board, Direction(..), Location)
 import Json.Decode as JD
 import Test exposing (..)
 import WebSocketFramework.EncodeDecode
@@ -270,13 +272,13 @@ protocolData =
         { playerid = "player"
         , player = player1
         , location = Just ( 1, 2 )
-        , direction = Just North
+        , direction = Nothing
         }
     , MoveReq
         { playerid = "player"
         , player = player2
         , location = Nothing
-        , direction = Nothing
+        , direction = Just North
         }
     , MoveRsp
         { player = player2

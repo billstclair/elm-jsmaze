@@ -28,9 +28,12 @@ module JSMaze.EncodeDecode
 
 import Dict exposing (Dict)
 import JSMaze.Board exposing (boardToStrings, setId, stringsToBoard)
-import JSMaze.GameTypes
+import JSMaze.SharedTypes
     exposing
         ( Appearance(..)
+        , Board
+        , BoardSpec
+        , Direction(..)
         , ErrorKind(..)
         , FullPlayer
         , Game
@@ -38,26 +41,20 @@ import JSMaze.GameTypes
         , GameName
         , GamePlayer
         , Image(..)
+        , Layout(..)
+        , Location
         , Message(..)
+        , Model
         , OwnedPlace
         , OwnedPlacement
         , PaintedWall
+        , Player
         , PlayerName
         , Point
+        , SavedModel
         , SideImages
         , StaticImages
         , Url
-        )
-import JSMaze.SharedTypes
-    exposing
-        ( Board
-        , BoardSpec
-        , Direction(..)
-        , Layout(..)
-        , Location
-        , Model
-        , Player
-        , SavedModel
         , directionToString
         , stringToDirection
         )
@@ -605,6 +602,11 @@ errorKindDecoder =
         ]
 
 
+{-| This is `Json.Encode.Extra.maybe` in elm-community/json-extra.
+
+I'm not including that whole package just for this one function.
+
+-}
 maybeNull : (a -> Value) -> Maybe a -> Value
 maybeNull encoder ma =
     Maybe.map encoder ma

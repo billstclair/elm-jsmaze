@@ -28,7 +28,7 @@ module JSMaze.EncodeDecode
 
 import Dict exposing (Dict)
 import JSMaze.Board exposing (boardToStrings, setId, stringsToBoard)
-import JSMaze.SharedTypes
+import JSMaze.Types
     exposing
         ( Appearance(..)
         , Board

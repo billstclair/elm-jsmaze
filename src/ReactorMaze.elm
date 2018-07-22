@@ -14,7 +14,7 @@ module ReactorMaze exposing (..)
 
 import Html
 import JSMaze exposing (init, prefix, update, view)
-import JSMaze.SharedTypes exposing (Model, Msg(..))
+import JSMaze.Types exposing (Model, Msg(..))
 import Json.Encode as JE
 import Task
 

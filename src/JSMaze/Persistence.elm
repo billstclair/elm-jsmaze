@@ -35,7 +35,7 @@ import JSMaze.EncodeDecode
         , modelEncoder
         , playerEncoder
         )
-import JSMaze.SharedTypes
+import JSMaze.Types
     exposing
         ( Board
         , Model

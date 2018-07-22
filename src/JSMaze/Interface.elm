@@ -12,7 +12,7 @@
 
 module JSMaze.Interface exposing (..)
 
-import JSMaze.SharedTypes
+import JSMaze.Types
     exposing
         ( Message(..)
         , Msg(..)

@@ -81,7 +81,8 @@ import JSMaze.Persistence as Persistence
         , writePlayer
         )
 import JSMaze.Render exposing (render2d, render3d, renderControls)
-import JSMaze.SharedTypes
+import JSMaze.Styles as Styles
+import JSMaze.Types
     exposing
         ( Board
         , Direction(..)
@@ -96,7 +97,6 @@ import JSMaze.SharedTypes
         , initialPlayer
         , operationToDirection
         )
-import JSMaze.Styles as Styles
 import Keyboard exposing (KeyCode)
 import List.Extra as LE
 import LocalStorage exposing (LocalStorage, setPorts)
@@ -398,6 +398,10 @@ updateButton button model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ReceiveTask result ->
+            -- TODO
+            model ! []
+
         DoWrite writes ->
             case writes of
                 [] ->

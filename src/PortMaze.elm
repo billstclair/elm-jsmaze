@@ -14,7 +14,7 @@ port module PortMaze exposing (..)
 
 import Html
 import JSMaze exposing (init, update, view)
-import JSMaze.SharedTypes exposing (Model, Msg(..))
+import JSMaze.Types exposing (Model, Msg(..))
 import LocalStorage
 import LocalStorage.SharedTypes
     exposing

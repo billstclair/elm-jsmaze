@@ -22,7 +22,9 @@ import Array exposing (Array)
 import Debug exposing (log)
 import Html exposing (Html)
 import JSMaze.Board exposing (forwardDelta, getCell)
-import JSMaze.SharedTypes
+import JSMaze.Styles exposing (SClass(..))
+import JSMaze.TwoDMath exposing (Rectangle, Vector)
+import JSMaze.Types
     exposing
         ( Board
         , BoardSpec
@@ -38,8 +40,6 @@ import JSMaze.SharedTypes
         , Walls
         , sumLocations
         )
-import JSMaze.Styles exposing (SClass(..))
-import JSMaze.TwoDMath exposing (Rectangle, Vector)
 import Keyboard exposing (KeyCode)
 import Svg exposing (Svg, g, image, line, rect, svg)
 import Svg.Attributes

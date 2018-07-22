@@ -34,7 +34,7 @@ module JSMaze.Board
 import Array exposing (Array)
 import Array.Extra as AE
 import Debug exposing (log)
-import JSMaze.SharedTypes
+import JSMaze.Types
     exposing
         ( Board
         , BoardSpec

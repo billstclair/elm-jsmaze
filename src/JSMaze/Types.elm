@@ -10,7 +10,7 @@
 ----------------------------------------------------------------------
 
 
-module JSMaze.SharedTypes
+module JSMaze.Types
     exposing
         ( Appearance(..)
         , Board

@@ -18,7 +18,7 @@ import JSMaze.EncodeDecode as ED
         , stringToValue
         , valueToString
         )
-import JSMaze.SharedTypes
+import JSMaze.Types
     exposing
         ( Appearance(..)
         , Board

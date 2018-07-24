@@ -92,6 +92,7 @@ import JSMaze.Types
         , Msg(..)
         , Operation(..)
         , Player
+        , Write(..)
         , currentBoardId
         , currentPlayerId
         , initialPlayer
@@ -224,9 +225,9 @@ getMaze model =
     in
     mdl
         ! [ chainWrites
-                [ writeBoard newBoard
-                , writePlayer newPlayer
-                , writeModel mdl
+                [ WriteBoard newBoard
+                , WritePlayer newPlayer
+                , WriteModel mdl
                 ]
           ]
 
@@ -371,15 +372,28 @@ changeBoardSize ( rowinc, colinc ) model =
     in
     ( mdl
     , chainWrites
-        [ writeBoard mdl.board
-        , writePlayer mdl.player
+        [ WriteBoard mdl.board
+        , WritePlayer mdl.player
         ]
     )
 
 
-chainWrites : List (LocalStorage Msg -> Cmd Msg) -> Cmd Msg
+chainWrites : List Write -> Cmd Msg
 chainWrites writes =
-    Task.perform DoWrite <| Task.succeed writes
+    Task.perform DoWrites <| Task.succeed writes
+
+
+doWrite : Write -> LocalStorage msg -> Cmd msg
+doWrite write storage =
+    case write of
+        WriteBoard board ->
+            writeBoard board storage
+
+        WritePlayer player ->
+            writePlayer player storage
+
+        WriteModel model ->
+            writeModel model storage
 
 
 updateButton : Button Operation -> Model -> Model
@@ -402,14 +416,14 @@ update msg model =
             -- TODO
             model ! []
 
-        DoWrite writes ->
+        DoWrites writes ->
             case writes of
                 [] ->
                     model ! []
 
                 write :: rest ->
                     model
-                        ! [ write model.storage
+                        ! [ doWrite write model.storage
                           , chainWrites rest
                           ]
 

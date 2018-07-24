@@ -44,6 +44,7 @@ module JSMaze.Types
         , Url
         , WallSpec
         , Walls
+        , Write(..)
         , currentBoardId
         , currentPlayerId
         , defaultSavedModel
@@ -110,13 +111,19 @@ type Operation
     | SaveMaze
 
 
+type Write
+    = WriteBoard Board
+    | WritePlayer Player
+    | WriteModel Model
+
+
 type Msg
     = InitialSize Size
     | Resize Size
     | DownKey Int
     | ButtonMsg (Button.Msg Msg Operation)
     | UpdatePorts LST.Operation (Maybe (Ports Msg)) Key Value
-    | DoWrite (List (LocalStorage Msg -> Cmd Msg))
+    | DoWrites (List Write)
     | ReceiveTask (Result String Message)
     | Nop
 

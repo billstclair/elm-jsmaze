@@ -314,7 +314,8 @@ type alias PlayerName =
 
 
 type alias FullPlayer =
-    { name : PlayerName
+    { id : PlayerId
+    , name : PlayerName
     , appearance : Appearance
     , location : Location
     , direction : Direction
@@ -334,11 +335,12 @@ type alias PaintedWalls =
 
 
 type alias GameName =
-    GameId
+    String
 
 
 type alias Game =
-    { name : GameName
+    { id : GameId
+    , name : GameName
     , description : String
     , owner : PlayerName
     , board : Board
@@ -357,7 +359,7 @@ type alias GameDescription =
 
 type alias GamePlayer =
     { player : PlayerName
-    , game : GameName
+    , game : GameId
     }
 
 
@@ -368,12 +370,12 @@ Message, and hashed to the `hash`.
 
 -}
 type alias Account =
-    { email : String
+    { userid : String
     , oauthProvider : Maybe String
     , salt : String
     , hash : String
 
-    -- These are stored under "<hash salt email>.currentGame"
+    -- These are stored under "<hash salt userid>.currentGame"
     -- and ".allGames" -> List Int, and .game.<int> -> Player.
     , currentGame : GamePlayer
     , allGames : List GamePlayer
@@ -405,6 +407,13 @@ type ErrorKind
     | IllegalWallLocationError OwnedPlacement
     | UnknownAppearanceError String
     | UnknownImageError String
+    | RandomError String
+
+
+type alias Error =
+    { kind : ErrorKind
+    , message : String
+    }
 
 
 type
@@ -422,7 +431,11 @@ type
       -- When I figure out how to do it, there will also be
       -- a way to login from an oauthProvier
       -- passwordHash is a simple hash of the user-typed password
-    | LoginWithPasswordReq { email : String, passwordHash : String }
+    | CheckLoginReq { userid : String }
+    | CheckLoginRsp { userid : String, exists : Bool }
+    | NewLoginReq { userid : String, passwordHash : String }
+    | NewLoginRsp { userid : String }
+    | LoginWithPasswordReq { userid : String, passwordHash : String }
       -- Sent to only the requester
     | LoginRsp
         { playerid : PlayerId

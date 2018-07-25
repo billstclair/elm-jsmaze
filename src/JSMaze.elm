@@ -13,6 +13,7 @@
 module JSMaze exposing (init, prefix, subscriptions, update, view)
 
 import Char
+import Cmd.Extra exposing (withCmd, withCmds, withNoCmd)
 import Debug exposing (log)
 import Html
     exposing
@@ -173,14 +174,15 @@ init value ports =
                     initialModel.storage
     in
     { initialModel | storage = storage }
-        ! [ initialSizeCmd
-          , Persistence.readThing storage <| boardIdKey currentBoardId
-          ]
+        |> withCmds
+            [ initialSizeCmd
+            , Persistence.readThing storage <| boardIdKey currentBoardId
+            ]
 
 
 saveModel : Model -> ( Model, Cmd Msg )
 saveModel model =
-    model ! [ writeModel model model.storage ]
+    model |> withCmd (writeModel model model.storage)
 
 
 editMaze : Model -> ( Model, Cmd Msg )
@@ -224,12 +226,13 @@ getMaze model =
             }
     in
     mdl
-        ! [ chainWrites
+        |> withCmds
+            [ chainWrites
                 [ WriteBoard newBoard
                 , WritePlayer newPlayer
                 , WriteModel mdl
                 ]
-          ]
+            ]
 
 
 {-| For now, this just exits editing mode.
@@ -256,7 +259,7 @@ toggleLayout model =
         mdl =
             { model | layout = layout }
     in
-    mdl ! [ writeModel mdl mdl.storage ]
+    mdl |> withCmd (writeModel mdl mdl.storage)
 
 
 toggleWall : Direction -> Location -> Model -> ( Model, Cmd Msg )
@@ -267,7 +270,7 @@ toggleWall direction location model =
     in
     case getCell location board of
         Nothing ->
-            model ! []
+            model |> withNoCmd
 
         Just cell ->
             let
@@ -349,7 +352,7 @@ toggleWall direction location model =
                 mdl =
                     { model | board = nb3 }
             in
-            mdl ! [ writeBoard nb3 mdl.storage ]
+            mdl |> withCmd (writeBoard nb3 mdl.storage)
 
 
 changeBoardSize : ( Int, Int ) -> Model -> ( Model, Cmd Msg )
@@ -414,18 +417,19 @@ update msg model =
     case msg of
         ReceiveTask result ->
             -- TODO
-            model ! []
+            model |> withNoCmd
 
         DoWrites writes ->
             case writes of
                 [] ->
-                    model ! []
+                    model |> withNoCmd
 
                 write :: rest ->
                     model
-                        ! [ doWrite write model.storage
-                          , chainWrites rest
-                          ]
+                        |> withCmds
+                            [ doWrite write model.storage
+                            , chainWrites rest
+                            ]
 
         UpdatePorts operation ports key value ->
             let
@@ -440,11 +444,11 @@ update msg model =
                             }
             in
             if operation /= LocalStorage.SharedTypes.GetItemOperation then
-                mdl ! []
+                mdl |> withNoCmd
             else
                 case decodePersistentThing key value of
                     Err _ ->
-                        mdl ! []
+                        mdl |> withNoCmd
 
                     Ok thing ->
                         case thing of
@@ -455,11 +459,12 @@ update msg model =
                                             { board | id = currentBoardId }
                                 in
                                 { mdl | board = newBoard }
-                                    ! [ Persistence.readThing
+                                    |> withCmds
+                                        [ Persistence.readThing
                                             mdl.storage
-                                        <|
+                                          <|
                                             playerIdKey currentBoardId currentPlayerId
-                                      ]
+                                        ]
 
                             PersistentPlayer player ->
                                 { mdl
@@ -468,11 +473,12 @@ update msg model =
                                         removePlayer mdl.player mdl.board
                                             |> addPlayer player
                                 }
-                                    ! [ Persistence.readThing mdl.storage modelKey ]
+                                    |> withCmd
+                                        (Persistence.readThing mdl.storage modelKey)
 
                             PersistentModel savedModel ->
                                 { mdl | layout = savedModel.layout }
-                                    ! []
+                                    |> withNoCmd
 
         ButtonMsg msg ->
             case Button.checkSubscription msg of
@@ -484,7 +490,7 @@ update msg model =
                             else
                                 Just ( time, msg )
                     }
-                        ! []
+                        |> withNoCmd
 
                 Nothing ->
                     let
@@ -527,9 +533,10 @@ update msg model =
                                                 movePlayer dir model
                                         in
                                         m
-                                            ! [ writePlayer m.player model.storage ]
+                                            |> withCmd
+                                                (writePlayer m.player model.storage)
                             else
-                                model ! []
+                                model |> withNoCmd
                     in
                     updateButton button
                         { mdl
@@ -539,24 +546,24 @@ update msg model =
                                 else
                                     mdl.isTouchAware
                         }
-                        ! [ cmd, cmd2 ]
+                        |> withCmds [ cmd, cmd2 ]
 
         InitialSize size ->
             { model | windowSize = size }
-                ! []
+                |> withNoCmd
 
         Resize size ->
-            { model | windowSize = size } ! []
+            { model | windowSize = size } |> withNoCmd
 
         DownKey code ->
             let
                 mdl =
                     processDownKey code model
             in
-            mdl ! [ writePlayer mdl.player mdl.storage ]
+            mdl |> withCmd (writePlayer mdl.player mdl.storage)
 
         Nop ->
-            model ! []
+            model |> withNoCmd
 
 
 moveDelta : Direction -> Direction -> ( Int, Int )

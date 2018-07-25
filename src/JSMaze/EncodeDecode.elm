@@ -369,7 +369,8 @@ appearanceDecoder =
 fullPlayerEncoder : FullPlayer -> Value
 fullPlayerEncoder player =
     JE.object
-        [ ( "name", JE.string player.name )
+        [ ( "id", JE.string player.id )
+        , ( "name", JE.string player.name )
         , ( "appearance", appearanceEncoder player.appearance )
         , ( "location", locationEncoder player.location )
         , ( "direction", directionEncoder player.direction )
@@ -379,6 +380,7 @@ fullPlayerEncoder player =
 fullPlayerDecoder : Decoder FullPlayer
 fullPlayerDecoder =
     decode FullPlayer
+        |> required "id" JD.string
         |> required "name" JD.string
         |> required "appearance" appearanceDecoder
         |> required "location" locationDecoder
@@ -412,7 +414,8 @@ It will store the dicts as separately-indexed items, to reduce bandwidth.
 gameEncoder : Game -> Value
 gameEncoder game =
     JE.object
-        [ ( "name", JE.string game.name )
+        [ ( "id", JE.string game.id )
+        , ( "name", JE.string game.name )
         , ( "description", JE.string game.description )
         , ( "owner", JE.string game.owner )
         , ( "board", boardEncoder game.board )
@@ -431,8 +434,8 @@ gameEncoder game =
         ]
 
 
-makeGame : String -> String -> String -> Board -> List FullPlayer -> List PaintedWall -> Game
-makeGame name description owner board players walls =
+makeGame : String -> String -> String -> String -> Board -> List FullPlayer -> List PaintedWall -> Game
+makeGame id name description owner board players walls =
     let
         playerNamesDict =
             List.foldr
@@ -466,7 +469,8 @@ makeGame name description owner board players walls =
                 Dict.empty
                 walls
     in
-    { name = name
+    { id = id
+    , name = name
     , description = description
     , owner = owner
     , board = board
@@ -481,6 +485,7 @@ makeGame name description owner board players walls =
 gameDecoder : Decoder Game
 gameDecoder =
     decode makeGame
+        |> required "id" JD.string
         |> required "name" JD.string
         |> required "description" JD.string
         |> required "owner" JD.string
@@ -581,6 +586,9 @@ errorKindEncoder kind =
         UnknownImageError imageName ->
             JE.object [ ( "UnknownImageError", JE.string imageName ) ]
 
+        RandomError message ->
+            JE.object [ ( "RandomError", JE.string message ) ]
+
 
 errorKindDecoder : Decoder ErrorKind
 errorKindDecoder =
@@ -599,6 +607,8 @@ errorKindDecoder =
             JD.field "UnknownAppearanceError" JD.string
         , JD.map UnknownImageError <|
             JD.field "UnknownImageError" JD.string
+        , JD.map RandomError <|
+            JD.field "RandomError" JD.string
         ]
 
 
@@ -633,9 +643,9 @@ messageEncoder message =
               ]
             )
 
-        LoginWithPasswordReq { email, passwordHash } ->
+        LoginWithPasswordReq { userid, passwordHash } ->
             ( Req "loginWithPassword"
-            , [ ( "email", JE.string email )
+            , [ ( "userid", JE.string userid )
               , ( "passwordHash", JE.string passwordHash )
               ]
             )
@@ -784,13 +794,13 @@ pingReqDecoder =
 loginWithPasswordReqDecoder : Decoder Message
 loginWithPasswordReqDecoder =
     decode
-        (\email passwordHash ->
+        (\userid passwordHash ->
             LoginWithPasswordReq
-                { email = email
+                { userid = userid
                 , passwordHash = passwordHash
                 }
         )
-        |> required "email" JD.string
+        |> required "userid" JD.string
         |> required "passwordHash" JD.string
 
 

@@ -226,16 +226,20 @@ protocolData =
         { error = UnknownImageError "bar"
         , message = "No such saved image"
         }
+    , ErrorRsp
+        { error = RandomError "Somebody done me wrong."
+        , message = "I wonder who?"
+        }
     , LoginWithPasswordReq
-        { email = "nobody@nowhere.com"
+        { userid = "nobody"
         , passwordHash = "what, me worry?"
         }
     , LoginRsp
         { playerid = "player"
         , currentGame = "game"
         , allGames =
-            [ { player = "player", game = "game" }
-            , { player = "player2", game = "game2" }
+            [ { player = "player", game = "1234" }
+            , { player = "player2", game = "1235" }
             ]
         }
     , LogoutReq { playerid = "player" }
@@ -290,17 +294,18 @@ protocolData =
 
 player1 : GamePlayer
 player1 =
-    { player = "player", game = "game" }
+    { player = "player", game = "1234" }
 
 
 player2 : GamePlayer
 player2 =
-    { player = "player2", game = "game2" }
+    { player = "player2", game = "1235" }
 
 
 game1 : Game
 game1 =
-    { name = "Bill's Maze"
+    { id = "1234"
+    , name = "Bill's Maze"
     , description = "Just a little maze."
     , owner = "Bill"
     , board = simpleBoard
@@ -328,7 +333,8 @@ game1 =
 
 fullPlayer1 : FullPlayer
 fullPlayer1 =
-    { name = "Bill"
+    { id = "123"
+    , name = "Bill"
     , appearance = InvisibleAppearance
     , location = ( 0, 0 )
     , direction = North
@@ -337,7 +343,8 @@ fullPlayer1 =
 
 fullPlayer2 : FullPlayer
 fullPlayer2 =
-    { name = "Moe"
+    { id = "234"
+    , name = "Moe"
     , appearance = DefaultAppearance
     , location = ( 0, 0 )
     , direction = South
@@ -346,7 +353,8 @@ fullPlayer2 =
 
 fullPlayer3 : FullPlayer
 fullPlayer3 =
-    { name = "Larry"
+    { id = "345"
+    , name = "Larry"
     , appearance =
         StaticImageAppearance
             { front = image1
@@ -361,7 +369,8 @@ fullPlayer3 =
 
 fullPlayer4 : FullPlayer
 fullPlayer4 =
-    { name = "Curly"
+    { id = "456"
+    , name = "Curly"
     , appearance =
         VaryingAppearance
             { front = [ image1 ]

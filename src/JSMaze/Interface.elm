@@ -10,14 +10,41 @@
 ----------------------------------------------------------------------
 
 
-module JSMaze.Interface exposing (..)
+module JSMaze.Interface
+    exposing
+        ( GameState(..)
+        , ServerState
+        , messageProcessor
+        )
 
+import Dict exposing (Dict)
+import JSMaze.Board exposing (simpleBoard)
 import JSMaze.Types
     exposing
-        ( Message(..)
+        ( Appearance(..)
+        , Direction(..)
+        , ErrorKind(..)
+        , FullPlayer
+        , Game
+        , GamePlayer
+        , Message(..)
         , Msg(..)
         )
 import Task
+import WebSocketFramework.ServerInterface
+    exposing
+        ( addGame
+        , addPlayer
+        , getGame
+        , getGamePlayers
+        , getPlayer
+        , newGameid
+        , newPlayerid
+        , removeGame
+        , removePlayer
+        , updateGame
+        , updatePlayer
+        )
 import WebSocketFramework.Types as Types
     exposing
         ( GameId
@@ -30,18 +57,18 @@ import WebSocketFramework.Types as Types
 
 {-| TODO
 -}
-type alias Player =
-    String
+type GameState
+    = Game Game
+    | Server ServerRecord
 
 
-{-| TODO
--}
-type alias GameState =
-    ()
+type alias ServerRecord =
+    { playerDict : Dict PlayerId (List GamePlayer)
+    }
 
 
 type alias ServerState =
-    Types.ServerState GameState Player
+    Types.ServerState GameState FullPlayer
 
 
 type alias TaskToCmdMessage =
@@ -82,4 +109,117 @@ messageProcessor state message =
 
 messageProcessorInternal : ServerState -> Message -> ( ServerState, Maybe Message )
 messageProcessorInternal state message =
-    ( state, Just message )
+    case message of
+        LoginWithPasswordReq { userid, passwordHash } ->
+            loginWithPassword userid passwordHash state
+
+        _ ->
+            ( state
+            , Just <|
+                ErrorRsp
+                    { error = RandomError "Not implemented"
+                    , message = "Message not yet implemented: " ++ toString message
+                    }
+            )
+
+
+dummyGameName : String
+dummyGameName =
+    "Maze"
+
+
+{-| To do. Validate and pull data out of backing store.
+
+For now, this creates a new player if there is none, or returns the existing one. Just enough to make the UI work against the back-end.
+
+-}
+loginWithPassword : String -> String -> ServerState -> ( ServerState, Maybe Message )
+loginWithPassword userid password state =
+    case state.state of
+        Just (Server { playerDict }) ->
+            case Dict.toList playerDict of
+                ( playerid, playerGames ) :: _ ->
+                    -- TODO
+                    ( state, Nothing )
+
+                _ ->
+                    newPlayer state
+
+        _ ->
+            newPlayer state
+
+
+newPlayer : ServerState -> ( ServerState, Maybe Message )
+newPlayer state =
+    let
+        gameName =
+            dummyGameName
+
+        playerName =
+            "Player"
+
+        ( gameid, state2 ) =
+            newGameid state
+
+        gamePlayer =
+            { player = playerName
+            , game = gameid
+            }
+
+        ( playerid, state3 ) =
+            newPlayerid state2
+
+        playerGames =
+            [ gamePlayer ]
+
+        ( serverRecord, state4 ) =
+            case state.state of
+                Just (Server serverRecord) ->
+                    ( serverRecord, state2 )
+
+                _ ->
+                    let
+                        serverRecord =
+                            { playerDict = Dict.empty }
+                    in
+                    ( serverRecord
+                    , { state3
+                        | state = Just (Server serverRecord)
+                      }
+                    )
+
+        player =
+            { id = playerid
+            , name = playerName
+            , appearance = DefaultAppearance
+            , location = ( 0, 0 )
+            , direction = South
+            }
+
+        game =
+            { id = gameid
+            , name = gameName
+            , description = "The default maze."
+            , owner = playerName
+            , board = simpleBoard
+            , playerDict =
+                Dict.fromList
+                    [ ( playerName, player ) ]
+            , playerNamesDict =
+                Dict.fromList
+                    [ ( player.location, [ playerName ] ) ]
+            , wallsDict = Dict.empty
+            }
+
+        state5 =
+            addGame gameid (Game game) state4
+
+        playerInfo =
+            { gameid = gameid
+            , player = player
+            }
+
+        state6 =
+            addPlayer playerid playerInfo state5
+    in
+    ( state6, Nothing )

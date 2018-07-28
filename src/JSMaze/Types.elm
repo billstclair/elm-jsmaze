@@ -439,7 +439,7 @@ type
       -- Sent to only the requester
     | LoginRsp
         { playerid : PlayerId
-        , currentGame : GameName
+        , currentGame : GameId
         , allGames : List GamePlayer
         }
       -- Logout of the current session. Do NOT exit any games.
@@ -448,12 +448,12 @@ type
     | LogoutRsp { players : List GamePlayer }
       -- Join an existing game as the given player.
       -- Can be either a brand new player, or a player already associated
-      -- with this login and the given GameName.
+      -- with this login and the given GameId.
     | JoinGameReq
         { playerid : PlayerId
         , player : GamePlayer
         }
-      -- Create a brand new game, with a brand new GameName.
+      -- Create a brand new game, with a brand new GameId.
       -- The game is initially private, meaning you have to know its name
       -- to join it.
       -- The game.owner will be auto-joined, so the response will be
@@ -551,7 +551,7 @@ type
       -- As soon as all members exit a private game, it will be destroyed.
     | UnlistGameReq
         { playerid : PlayerId
-        , game : GameName
+        , game : GameId
         , switchOwnership : Maybe PlayerName
         }
       -- Sent to all members when a game is listed or unlisted.

@@ -110,6 +110,9 @@ messageProcessor state message =
 messageProcessorInternal : ServerState -> Message -> ( ServerState, Maybe Message )
 messageProcessorInternal state message =
     case message of
+        PingReq { message } ->
+            ( state, Just <| PongRsp { message = message } )
+
         LoginWithPasswordReq { userid, passwordHash } ->
             loginWithPassword userid passwordHash state
 
@@ -175,7 +178,7 @@ newPlayer state =
         ( serverRecord, state4 ) =
             case state.state of
                 Just (Server serverRecord) ->
-                    ( serverRecord, state2 )
+                    ( serverRecord, state3 )
 
                 _ ->
                     let
@@ -221,5 +224,31 @@ newPlayer state =
 
         state6 =
             addPlayer playerid playerInfo state5
+
+        state7 =
+            case state.state of
+                Just (Server serverRecord) ->
+                    { state6
+                        | state =
+                            Just <|
+                                Server
+                                    { serverRecord
+                                        | playerDict =
+                                            Dict.insert playerid
+                                                [ gamePlayer ]
+                                                serverRecord.playerDict
+                                    }
+                    }
+
+                _ ->
+                    -- Can't happen
+                    state6
     in
-    ( state6, Nothing )
+    ( state7
+    , Just <|
+        LoginRsp
+            { playerid = playerid
+            , currentGame = gameid
+            , allGames = [ gamePlayer ]
+            }
+    )

@@ -439,7 +439,7 @@ type
       -- Sent to only the requester
     | LoginRsp
         { playerid : PlayerId
-        , currentGame : GameId
+        , currentGame : Maybe GameId
         , allGames : List GamePlayer
         }
       -- Logout of the current session. Do NOT exit any games.
@@ -456,15 +456,11 @@ type
       -- Create a brand new game, with a brand new GameId.
       -- The game is initially private, meaning you have to know its name
       -- to join it.
-      -- The game.owner will be auto-joined, so the response will be
-      -- a JoinGameNotificationRsp, not a JoinGameRsp.
+      -- The game.owner must already be in the passed Game, so
+      -- this returns a JoinGameNotificationRsp, not a JoinGameRsp.
+      -- If the owner is NOT in the tables, an error is returned.
       --
-      -- It would be nice to be able to rename a game, but I'm going to
-      -- wait to see how much database effort that will take before
-      -- promising it.
-      -- I suppose I could have an internal, random GameId, mapped to and
-      -- from the user name.
-      -- Then the game names wouldn't need to be unique, only their IDs.
+      -- It would be nice to be able to rename a game. No message for that yet.
     | NewGameReq
         { playerid : PlayerId
         , game : Game

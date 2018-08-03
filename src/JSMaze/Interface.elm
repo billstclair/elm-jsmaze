@@ -30,6 +30,7 @@ import JSMaze.Types
         , Message(..)
         , Msg(..)
         )
+import List.Extra as LE
 import Task
 import WebSocketFramework.ServerInterface
     exposing
@@ -60,10 +61,12 @@ import WebSocketFramework.Types as Types
 type GameState
     = Game Game
     | Server ServerRecord
+    | NoGame
 
 
 type alias ServerRecord =
     { playerDict : Dict PlayerId (List GamePlayer)
+    , gameDict : Dict GameId (List PlayerId)
     }
 
 
@@ -116,6 +119,9 @@ messageProcessorInternal state message =
         LoginWithPasswordReq { userid, passwordHash } ->
             loginWithPassword userid passwordHash state
 
+        LogoutReq { playerid } ->
+            logout playerid state
+
         _ ->
             ( state
             , Just <|
@@ -131,124 +137,113 @@ dummyGameName =
     "Maze"
 
 
-{-| To do. Validate and pull data out of backing store.
+dummyPlayer : PlayerId -> FullPlayer
+dummyPlayer playerid =
+    { id = playerid
+    , name = "noname"
+    , appearance = InvisibleAppearance
+    , location = ( 0, 0 )
+    , direction = North
+    }
+
+
+{-| To do. Validate userid/password and pull games out of backing store.
 
 For now, this creates a new player if there is none, or returns the existing one. Just enough to make the UI work against the back-end.
 
 -}
 loginWithPassword : String -> String -> ServerState -> ( ServerState, Maybe Message )
 loginWithPassword userid password state =
-    case state.state of
-        Just (Server { playerDict }) ->
-            case Dict.toList playerDict of
-                ( playerid, playerGames ) :: _ ->
-                    -- TODO
-                    ( state, Nothing )
-
-                _ ->
-                    newPlayer state
-
-        _ ->
-            newPlayer state
-
-
-newPlayer : ServerState -> ( ServerState, Maybe Message )
-newPlayer state =
     let
-        gameName =
-            dummyGameName
-
-        playerName =
-            "Player"
-
         ( gameid, state2 ) =
             newGameid state
-
-        gamePlayer =
-            { player = playerName
-            , game = gameid
-            }
 
         ( playerid, state3 ) =
             newPlayerid state2
 
-        playerGames =
-            [ gamePlayer ]
-
-        ( serverRecord, state4 ) =
-            case state.state of
-                Just (Server serverRecord) ->
-                    ( serverRecord, state3 )
-
-                _ ->
-                    let
-                        serverRecord =
-                            { playerDict = Dict.empty }
-                    in
-                    ( serverRecord
-                    , { state3
-                        | state = Just (Server serverRecord)
-                      }
-                    )
-
-        player =
-            { id = playerid
-            , name = playerName
-            , appearance = DefaultAppearance
-            , location = ( 0, 0 )
-            , direction = South
-            }
-
-        game =
-            { id = gameid
-            , name = gameName
-            , description = "The default maze."
-            , owner = playerName
-            , board = simpleBoard
-            , playerDict =
-                Dict.fromList
-                    [ ( playerName, player ) ]
-            , playerNamesDict =
-                Dict.fromList
-                    [ ( player.location, [ playerName ] ) ]
-            , wallsDict = Dict.empty
-            }
+        state4 =
+            -- Hold on to this gameid. Just there to hold on to the playerid.
+            addGame gameid NoGame state3
 
         state5 =
-            addGame gameid (Game game) state4
-
-        playerInfo =
-            { gameid = gameid
-            , player = player
-            }
-
-        state6 =
-            addPlayer playerid playerInfo state5
-
-        state7 =
-            case state.state of
-                Just (Server serverRecord) ->
-                    { state6
-                        | state =
-                            Just <|
-                                Server
-                                    { serverRecord
-                                        | playerDict =
-                                            Dict.insert playerid
-                                                [ gamePlayer ]
-                                                serverRecord.playerDict
-                                    }
-                    }
-
-                _ ->
-                    -- Can't happen
-                    state6
+            -- Hold on to this playerid. No games yet.
+            addPlayer playerid
+                { gameid = gameid
+                , player = dummyPlayer playerid
+                }
+                state4
     in
-    ( state7
+    ( state5
     , Just <|
         LoginRsp
             { playerid = playerid
-            , currentGame = gameid
-            , allGames = [ gamePlayer ]
+            , currentGame = Nothing
+            , allGames = []
             }
     )
+
+
+removeFromGameDict : PlayerId -> List GamePlayer -> Dict GameId (List PlayerId) -> Dict GameId (List PlayerId)
+removeFromGameDict playerid gamePlayers gameDict =
+    List.foldl
+        (\gameid dict ->
+            case Dict.get gameid dict of
+                Nothing ->
+                    dict
+
+                Just playerids ->
+                    case LE.remove playerid playerids of
+                        [] ->
+                            Dict.remove gameid dict
+
+                        pids ->
+                            Dict.insert gameid pids dict
+        )
+        gameDict
+        (List.map .game gamePlayers)
+
+
+logout : PlayerId -> ServerState -> ( ServerState, Maybe Message )
+logout playerid state =
+    case getPlayer playerid state of
+        Nothing ->
+            ( state
+            , Just <|
+                ErrorRsp
+                    { error = UnknownPlayerIdError playerid
+                    , message = "Unknown playerid"
+                    }
+            )
+
+        Just { gameid } ->
+            let
+                ( gameState, gamePlayers ) =
+                    case state.state of
+                        Just (Server { playerDict, gameDict }) ->
+                            case Dict.get playerid playerDict of
+                                Nothing ->
+                                    ( state.state, [] )
+
+                                Just gamePlayers ->
+                                    ( Just <|
+                                        Server
+                                            { playerDict =
+                                                Dict.remove playerid playerDict
+                                            , gameDict =
+                                                removeFromGameDict
+                                                    playerid
+                                                    gamePlayers
+                                                    gameDict
+                                            }
+                                    , gamePlayers
+                                    )
+
+                        _ ->
+                            ( state.state, [] )
+            in
+            ( { state | state = gameState }
+                |> removePlayer playerid
+                |> removeGame gameid
+            , Just <|
+                LogoutRsp { players = gamePlayers }
+            )

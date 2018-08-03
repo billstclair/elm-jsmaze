@@ -653,7 +653,14 @@ messageEncoder message =
         LoginRsp { playerid, currentGame, allGames } ->
             ( Rsp "login"
             , [ ( "playerid", JE.string playerid )
-              , ( "currentGame", JE.string currentGame )
+              , ( "currentGame"
+                , case currentGame of
+                    Nothing ->
+                        JE.null
+
+                    Just gameid ->
+                        JE.string gameid
+                )
               , ( "allGames"
                 , JE.list (List.map gamePlayerEncoder allGames)
                 )
@@ -916,7 +923,7 @@ loginRspDecoder =
                 }
         )
         |> required "playerid" JD.string
-        |> required "currentGame" JD.string
+        |> required "currentGame" (JD.nullable JD.string)
         |> required "allGames" (JD.list gamePlayerDecoder)
 
 

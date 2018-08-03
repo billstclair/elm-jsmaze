@@ -236,11 +236,16 @@ protocolData =
         }
     , LoginRsp
         { playerid = "player"
-        , currentGame = "game"
+        , currentGame = Just "game"
         , allGames =
             [ { player = "player", game = "1234" }
             , { player = "player2", game = "1235" }
             ]
+        }
+    , LoginRsp
+        { playerid = "player"
+        , currentGame = Nothing
+        , allGames = []
         }
     , LogoutReq { playerid = "player" }
     , LogoutRsp

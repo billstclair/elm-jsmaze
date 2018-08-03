@@ -515,7 +515,7 @@ gamePlayerEncoder : GamePlayer -> Value
 gamePlayerEncoder player =
     JE.object
         [ ( "player", JE.string player.player )
-        , ( "game", JE.string player.game )
+        , ( "gameid", JE.string player.gameid )
         ]
 
 
@@ -523,7 +523,7 @@ gamePlayerDecoder : Decoder GamePlayer
 gamePlayerDecoder =
     decode GamePlayer
         |> required "player" JD.string
-        |> required "game" JD.string
+        |> required "gameid" JD.string
 
 
 ownedPlaceEncoder : OwnedPlace -> Value

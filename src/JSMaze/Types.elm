@@ -359,7 +359,7 @@ type alias GameDescription =
 
 type alias GamePlayer =
     { player : PlayerName
-    , game : GameId
+    , gameid : GameId
     }
 
 
@@ -547,7 +547,7 @@ type
       -- As soon as all members exit a private game, it will be destroyed.
     | UnlistGameReq
         { playerid : PlayerId
-        , game : GameId
+        , gameid : GameId
         , switchOwnership : Maybe PlayerName
         }
       -- Sent to all members when a game is listed or unlisted.

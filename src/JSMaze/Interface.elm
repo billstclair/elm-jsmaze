@@ -200,7 +200,7 @@ removeFromGameDict playerid gamePlayers gameDict =
                             Dict.insert gameid pids dict
         )
         gameDict
-        (List.map .game gamePlayers)
+        (List.map .gameid gamePlayers)
 
 
 logout : PlayerId -> ServerState -> ( ServerState, Maybe Message )

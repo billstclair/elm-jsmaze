@@ -192,7 +192,7 @@ protocolData =
         , message = "No such player id"
         }
     , ErrorRsp
-        { error = UnknownPlayerError { player = "Bob", game = "Zooland" }
+        { error = UnknownPlayerError { player = "Bob", gameid = "Zooland" }
         , message = "Ain't nobody named Bob in Zooland"
         }
     , ErrorRsp
@@ -200,7 +200,7 @@ protocolData =
             IllegalMoveError
                 { player =
                     { player = "Joe"
-                    , game = "Zooland"
+                    , gameid = "Zooland"
                     }
                 , location = ( 1, 2 )
                 }
@@ -211,7 +211,7 @@ protocolData =
             IllegalWallLocationError
                 { player =
                     { player = "Joe"
-                    , game = "Zooland"
+                    , gameid = "Zooland"
                     }
                 , location = ( 1, 2 )
                 , direction = North
@@ -238,8 +238,8 @@ protocolData =
         { playerid = "player"
         , currentGame = Just "game"
         , allGames =
-            [ { player = "player", game = "1234" }
-            , { player = "player2", game = "1235" }
+            [ { player = "player", gameid = "1234" }
+            , { player = "player2", gameid = "1235" }
             ]
         }
     , LoginRsp
@@ -299,12 +299,12 @@ protocolData =
 
 player1 : GamePlayer
 player1 =
-    { player = "player", game = "1234" }
+    { player = "player", gameid = "1234" }
 
 
 player2 : GamePlayer
 player2 =
-    { player = "player2", game = "1235" }
+    { player = "player2", gameid = "1235" }
 
 
 game1 : Game

@@ -40,8 +40,12 @@ These tasks are in roughly the order I intend to do them.
 
 1. The whole thing will be written in [Elm](https://elm-lang.org/), even the server, using [billstclair/elm-websocket-framework package](http://package.elm-lang.org/packages/billstclair/elm-websocket-framework/latest).
 
+1. The first thing to do is to finish the upgrade to Elm 0.19. I'm close.
+
 1. Use Amazon S3 for individual persistence and sharing of maze designs, drawings, character images, and sculptures (after WebGL rendering), either at Amazon itself, or using the Digital Ocean or other API-compatible system.
 
 1. Also allow sharing through simple copy and paste of JSON representations.
+
+1. Convert the CSS to a simple CSS file, so that I can find a real visual designer to make it pretty.
 
 1. Some sort of payment method for some part of the system, maybe more than some limited time per day of server connection.

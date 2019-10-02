@@ -16,21 +16,21 @@ These tasks are in roughly the order I intend to do them.
 
 1. Multiple named mazes
 
- You can edit now, but you should be able to save multiple edits, each with its own name and saved state, and return to any one at will.
+   You can edit now, but you should be able to save multiple edits, each with its own name and saved state, and return to any one at will.
 
 1. Paste images and video URLs on the walls. Make them visible with perspective.
 
 1. Networked play
 
- Multiple people in the same maze, each with a custom appearance. Some able to decorate the walls.
+   Multiple people in the same maze, each with a custom appearance. Some able to decorate the walls.
 
 1. Chat. First typed, then audio and video. End-to-end encrypted, if the participants wish that.
 
 1. War mode
 
- People in war mode may shoot at each other. The old MIT maze result of getting shot were to reappear somewhere random in the maze. There are lots of possibilties, including a scripting language to determine that.
+   People in war mode may shoot at each other. The old MIT maze result of getting shot were to reappear somewhere random in the maze. There are lots of possibilties, including a scripting language to determine that.
 
- Those in war mode cannot see, be seen, or interact with those NOT in war mode. If only the real world worked that way.
+   Those in war mode cannot see, be seen, or interact with those NOT in war mode. If only the real world worked that way.
 
 1. Store text on a wall. Paint on a wall. In addition to pasted images and video URLs.
 
